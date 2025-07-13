@@ -1,0 +1,419 @@
+[gd_scene load_steps=31 format=4 uid="uid://ceyww2ro6iwxu"]
+
+[ext_resource type="Texture2D" uid="uid://bpkm84nt44uua" path="res://img/Player/Player.png" id="2_xuqvo"]
+[ext_resource type="Script" uid="uid://dyx3ecku2t4d7" path="res://code/Player.cs" id="3_h2yge"]
+[ext_resource type="Texture2D" uid="uid://dfi1sfife64hn" path="res://icon.svg" id="4_1bvp3"]
+[ext_resource type="Script" uid="uid://h3x7372c0iq" path="res://code/Enermy.cs" id="4_lquwl"]
+[ext_resource type="Script" uid="uid://bmek0rbrhm8wk" path="res://code/CameraFollow.cs" id="6_7mycd"]
+[ext_resource type="Texture2D" uid="uid://c6v8vu3vv6chi" path="res://img/GUI/Status/Ground.png" id="6_vivmo"]
+[ext_resource type="Texture2D" uid="uid://dqodp7xgofin" path="res://img/GUI/Status/Health_Bar.png" id="7_2cqfq"]
+[ext_resource type="Texture2D" uid="uid://cjxgxl55cnb7t" path="res://img/GUI/Status/Spiritual_Power.png" id="7_074og"]
+[ext_resource type="Texture2D" uid="uid://dnj8b2eh5cw5k" path="res://img/GUI/Status/Health.png" id="8_yaehf"]
+[ext_resource type="Script" uid="uid://cijlyrarjt128" path="res://code/HpSoulBar.cs" id="9_dg77c"]
+[ext_resource type="Texture2D" uid="uid://ddgbqw8sywgtn" path="res://img/GUI/Status/Stamina_Bar.png" id="10_yaehf"]
+[ext_resource type="Texture2D" uid="uid://cytqk0cptqk8r" path="res://img/GUI/Status/Stamina.png" id="11_074og"]
+[ext_resource type="Script" uid="uid://bft0x4koc18sw" path="res://code/MpSoul.cs" id="13_1u8w0"]
+[ext_resource type="Texture2D" uid="uid://ynw176hubbub" path="res://img/GUI/Status/Energy_empty.png" id="13_getpj"]
+[ext_resource type="Texture2D" uid="uid://cnts02yyvrrff" path="res://asset/Mossy Tileset/Mossy - TileSet.png" id="13_ycdy4"]
+[ext_resource type="Texture2D" uid="uid://1yeipu43bjvh" path="res://img/GUI/Status/Energy_full.png" id="14_ryguw"]
+[ext_resource type="Texture2D" uid="uid://batrke7s10ovb" path="res://asset/Mossy Tileset/Mossy - MossyHills.png" id="14_w48qg"]
+[ext_resource type="Texture2D" uid="uid://dugj60s00q5r7" path="res://img/GUI/Status/Charm_Slot.png" id="15_d13ii"]
+[ext_resource type="Texture2D" uid="uid://nk5neg0hr1qp" path="res://img/GUI/Status/Healing_Potion.png" id="16_1u8w0"]
+[ext_resource type="TileSet" uid="uid://chu77k4hcpdn3" path="res://asset/turtorial_map.tres" id="19_cegan"]
+[ext_resource type="PackedScene" uid="uid://bejchsg60wywi" path="res://asset/ground.tscn" id="20_82xsv"]
+[ext_resource type="AudioStream" uid="uid://bou3ac2eqh3u2" path="res://sound/1.Prologue (The Forest of Nowhere).mp3" id="25_0odxb"]
+[ext_resource type="AudioStream" uid="uid://bg8213nlxdlxw" path="res://sound/1.Meet Vigil (Companion).mp3" id="26_lswn8"]
+[ext_resource type="Script" uid="uid://76q6tsjqiqb3" path="res://code/AreaMusic.cs" id="28_xuqvo"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_qsp4k"]
+radius = 6.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_lquwl"]
+size = Vector2(224, 240)
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_w48qg"]
+texture = ExtResource("13_ycdy4")
+texture_region_size = Vector2i(512, 512)
+1:0/0 = 0
+1:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-256, -91.0145, 256, -94.1529, 256, 256, -256, 256)
+0:0/0 = 0
+0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-87.876, 256, -87.876, -91.0145, 256, -94.1529, 256, 256)
+1:1/0 = 0
+2:1/0 = 0
+3:2/0 = 0
+4:2/0 = 0
+4:1/0 = 0
+4:0/0 = 0
+3:0/0 = 0
+2:0/0 = 0
+3:1/0 = 0
+5:0/0 = 0
+6:0/0 = 0
+6:1/0 = 0
+6:2/0 = 0
+5:2/0 = 0
+5:1/0 = 0
+0:1/0 = 0
+0:2/0 = 0
+0:3/0 = 0
+0:3/0/physics_layer_0/polygon_0/points = PackedVector2Array(256, -125.537, 94.1529, -122.399, 100.43, 28.2458, 256, 116.122)
+0:4/0 = 0
+1:4/0 = 0
+2:4/0 = 0
+2:3/0 = 0
+2:3/0/physics_layer_0/polygon_0/points = PackedVector2Array(-256, -119.26, -97.2913, -119.26, -106.707, 28.2458, -256, 109.845)
+1:2/0 = 0
+3:5/0 = 0
+3:4/0 = 0
+1:3/0 = 0
+1:3/0/physics_layer_0/polygon_0/points = PackedVector2Array(-256, -125.537, 256, -122.399, 256, 109.845, -256, 109.845)
+3:3/0 = 0
+2:2/0 = 0
+4:4/0 = 0
+5:4/0 = 0
+6:5/0 = 0
+5:5/0 = 0
+4:3/0 = 0
+3:6/0 = 0
+4:6/0 = 0
+4:5/0 = 0
+5:3/0 = 0
+6:3/0 = 0
+6:4/0 = 0
+6:6/0 = 0
+5:6/0 = 0
+2:6/0 = 0
+1:6/0 = 0
+0:6/0 = 0
+0:5/0 = 0
+1:5/0 = 0
+2:5/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vivmo"]
+texture = ExtResource("14_w48qg")
+texture_region_size = Vector2i(512, 512)
+0:0/0 = 0
+1:0/0 = 0
+0:1/0 = 0
+0:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-147.908, -85.7436, 162.913, -87.8872, 160.769, 145.764, -154.338, 141.477)
+1:1/0 = 0
+1:2/0 = 0
+1:3/0 = 0
+2:3/0 = 0
+3:3/0 = 0
+3:2/0 = 0
+3:1/0 = 0
+3:0/0 = 0
+2:0/0 = 0
+2:1/0 = 0
+2:2/0 = 0
+0:3/0 = 0
+0:2/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_vivmo"]
+tile_size = Vector2i(512, 512)
+physics_layer_0/collision_layer = 4
+physics_layer_0/collision_mask = 19
+sources/0 = SubResource("TileSetAtlasSource_w48qg")
+sources/1 = SubResource("TileSetAtlasSource_vivmo")
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_a6jrf"]
+size = Vector2(2272, 1856)
+
+[node name="Game" type="Node2D"]
+
+[node name="Player" type="CharacterBody2D" parent="." groups=["Player"]]
+z_index = 1
+position = Vector2(0, -60)
+collision_mask = 7
+script = ExtResource("3_h2yge")
+
+[node name="PlayerImg" type="Sprite2D" parent="Player"]
+position = Vector2(-3.41061e-13, 0)
+scale = Vector2(0.09, 0.09)
+texture = ExtResource("2_xuqvo")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player" groups=["Player"]]
+position = Vector2(1.66893e-06, 7.62939e-06)
+scale = Vector2(4, 4)
+shape = SubResource("CapsuleShape2D_qsp4k")
+
+[node name="Enermy" type="CharacterBody2D" parent="." groups=["Enemies"]]
+position = Vector2(8512, -896)
+scale = Vector2(0.479998, 0.48)
+collision_layer = 18
+collision_mask = 21
+script = ExtResource("4_lquwl")
+
+[node name="Sprite2D" type="Sprite2D" parent="Enermy"]
+position = Vector2(0, 1)
+scale = Vector2(1.71755, 1.82112)
+texture = ExtResource("4_1bvp3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Enermy"]
+position = Vector2(0, 1)
+shape = SubResource("RectangleShape2D_lquwl")
+
+[node name="Hp" type="TextureProgressBar" parent="Enermy"]
+offset_left = -114.584
+offset_top = -154.167
+offset_right = 926.416
+offset_bottom = -90.1667
+scale = Vector2(0.22, 0.22)
+value = 50.0
+texture_under = ExtResource("7_2cqfq")
+texture_progress = ExtResource("8_yaehf")
+
+[node name="Enermy2" type="CharacterBody2D" parent="." groups=["Enemies"]]
+position = Vector2(8352, -896)
+scale = Vector2(0.479998, 0.48)
+collision_layer = 18
+collision_mask = 21
+script = ExtResource("4_lquwl")
+
+[node name="Sprite2D" type="Sprite2D" parent="Enermy2"]
+position = Vector2(0, 1)
+scale = Vector2(1.71755, 1.82112)
+texture = ExtResource("4_1bvp3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Enermy2"]
+position = Vector2(0, 1)
+shape = SubResource("RectangleShape2D_lquwl")
+
+[node name="Hp" type="TextureProgressBar" parent="Enermy2"]
+offset_left = -114.584
+offset_top = -154.167
+offset_right = 926.416
+offset_bottom = -90.1667
+scale = Vector2(0.22, 0.22)
+value = 50.0
+texture_under = ExtResource("7_2cqfq")
+texture_progress = ExtResource("8_yaehf")
+
+[node name="Enermy3" type="CharacterBody2D" parent="." groups=["Enemies"]]
+position = Vector2(8096, -896)
+scale = Vector2(0.479998, 0.48)
+collision_layer = 18
+collision_mask = 21
+script = ExtResource("4_lquwl")
+
+[node name="Sprite2D" type="Sprite2D" parent="Enermy3"]
+position = Vector2(0, 1)
+scale = Vector2(1.71755, 1.82112)
+texture = ExtResource("4_1bvp3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Enermy3"]
+position = Vector2(0, 1)
+shape = SubResource("RectangleShape2D_lquwl")
+
+[node name="Hp" type="TextureProgressBar" parent="Enermy3"]
+offset_left = -114.584
+offset_top = -154.167
+offset_right = 926.416
+offset_bottom = -90.1667
+scale = Vector2(0.22, 0.22)
+value = 50.0
+texture_under = ExtResource("7_2cqfq")
+texture_progress = ExtResource("8_yaehf")
+
+[node name="Enermy4" type="CharacterBody2D" parent="." groups=["Enemies"]]
+position = Vector2(7960, -896)
+scale = Vector2(0.479998, 0.48)
+collision_layer = 18
+collision_mask = 21
+script = ExtResource("4_lquwl")
+
+[node name="Sprite2D" type="Sprite2D" parent="Enermy4"]
+position = Vector2(0, 1)
+scale = Vector2(1.71755, 1.82112)
+texture = ExtResource("4_1bvp3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Enermy4"]
+position = Vector2(0, 1)
+shape = SubResource("RectangleShape2D_lquwl")
+
+[node name="Hp" type="TextureProgressBar" parent="Enermy4"]
+offset_left = -114.584
+offset_top = -154.167
+offset_right = 926.416
+offset_bottom = -90.1667
+scale = Vector2(0.22, 0.22)
+value = 50.0
+texture_under = ExtResource("7_2cqfq")
+texture_progress = ExtResource("8_yaehf")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+script = ExtResource("6_7mycd")
+
+[node name="GUI" type="Control" parent="Camera2D"]
+z_index = 1
+layout_mode = 3
+anchors_preset = 0
+offset_left = -896.0
+offset_top = -512.0
+offset_right = 735.0
+offset_bottom = 5.0
+scale = Vector2(0.3, 0.3)
+
+[node name="BackFrame" type="TextureProgressBar" parent="Camera2D/GUI"]
+layout_mode = 0
+offset_top = -17.0
+offset_right = 1398.0
+offset_bottom = 466.0
+value = 50.0
+fill_mode = 3
+texture_under = ExtResource("6_vivmo")
+texture_progress = ExtResource("7_074og")
+texture_progress_offset = Vector2(40, 140)
+
+[node name="HpSoul" type="TextureProgressBar" parent="Camera2D/GUI"]
+layout_mode = 0
+offset_left = 307.692
+offset_top = 199.744
+offset_right = 1397.69
+offset_bottom = 263.744
+value = 100.0
+texture_under = ExtResource("7_2cqfq")
+texture_progress = ExtResource("8_yaehf")
+script = ExtResource("9_dg77c")
+PlayerPath = NodePath("../../../Player")
+
+[node name="MpSoul" type="TextureProgressBar" parent="Camera2D/GUI"]
+layout_mode = 0
+offset_left = 313.846
+offset_top = 255.128
+offset_right = 986.846
+offset_bottom = 315.128
+value = 100.0
+texture_under = ExtResource("10_yaehf")
+texture_progress = ExtResource("11_074og")
+script = ExtResource("13_1u8w0")
+PlayerPath = NodePath("../../../Player")
+
+[node name="SkillBoss" type="TextureProgressBar" parent="Camera2D/GUI"]
+layout_mode = 0
+offset_left = -153.846
+offset_top = 270.769
+offset_right = 307.154
+offset_bottom = 729.769
+scale = Vector2(0.4, 0.4)
+value = 1.0
+fill_mode = 4
+texture_under = ExtResource("13_getpj")
+texture_progress = ExtResource("14_ryguw")
+texture_progress_offset = Vector2(5, 5)
+
+[node name="SkillMons" type="TextureProgressBar" parent="Camera2D/GUI"]
+layout_mode = 0
+offset_left = 306.538
+offset_top = 330.0
+offset_right = 767.538
+offset_bottom = 789.0
+scale = Vector2(0.3, 0.3)
+value = 100.0
+fill_mode = 4
+texture_under = ExtResource("13_getpj")
+texture_progress = ExtResource("14_ryguw")
+texture_progress_offset = Vector2(5, 5)
+
+[node name="SumSlot" type="TextureRect" parent="Camera2D/GUI"]
+layout_mode = 0
+offset_left = 320.0
+offset_top = 73.8462
+offset_right = 419.0
+offset_bottom = 180.846
+texture = ExtResource("15_d13ii")
+
+[node name="SumSlot2" type="TextureRect" parent="Camera2D/GUI"]
+layout_mode = 0
+offset_left = 455.385
+offset_top = 73.8462
+offset_right = 554.385
+offset_bottom = 180.846
+texture = ExtResource("15_d13ii")
+
+[node name="SumSlot3" type="TextureRect" parent="Camera2D/GUI"]
+layout_mode = 0
+offset_left = 590.769
+offset_top = 73.8462
+offset_right = 689.769
+offset_bottom = 180.846
+texture = ExtResource("15_d13ii")
+
+[node name="SumSlot4" type="TextureRect" parent="Camera2D/GUI"]
+layout_mode = 0
+offset_left = 726.154
+offset_top = 73.8462
+offset_right = 825.154
+offset_bottom = 180.846
+texture = ExtResource("15_d13ii")
+
+[node name="HealthPoition" type="TextureRect" parent="Camera2D/GUI" groups=["HealthPotion"]]
+layout_mode = 0
+offset_left = 480.0
+offset_top = 334.487
+offset_right = 560.0
+offset_bottom = 441.487
+texture = ExtResource("16_1u8w0")
+expand_mode = 1
+
+[node name="HealthPoition2" type="TextureRect" parent="Camera2D/GUI" groups=["HealthPotion"]]
+layout_mode = 0
+offset_left = 584.615
+offset_top = 334.487
+offset_right = 664.615
+offset_bottom = 441.487
+texture = ExtResource("16_1u8w0")
+expand_mode = 1
+
+[node name="HealthPoition3" type="TextureRect" parent="Camera2D/GUI" groups=["HealthPotion"]]
+layout_mode = 0
+offset_left = 689.231
+offset_top = 334.487
+offset_right = 769.231
+offset_bottom = 441.487
+texture = ExtResource("16_1u8w0")
+expand_mode = 1
+
+[node name="Ground1" type="TileMapLayer" parent="."]
+z_index = 10
+position = Vector2(0, 64)
+scale = Vector2(0.125, 0.125)
+tile_map_data = PackedByteArray("AAD//wAAAAABAAAAAAD+/wAAAAABAAAAAAAAAAAAAAABAAAAAAABAAAAAAABAAAAAAACAAAAAAABAAAAAAADAAAAAAABAAAAAAAEAAAAAAABAAAAAAAFAAAAAAABAAAAAAAGAAAAAAABAAAAAAAHAAAAAAABAAAAAAALAP3/AAAAAAMAAAAMAP3/AAABAAMAAAANAP3/AAACAAMAAAARAPr/AAAAAAMAAAASAPr/AAABAAMAAAATAPr/AAACAAMAAAALAPf/AAAAAAMAAAAMAPf/AAABAAMAAAANAPf/AAACAAMAAAARAPT/AAAAAAMAAAASAPT/AAABAAMAAAATAPT/AAACAAMAAAAXAPL/AAABAAAAAAAYAPL/AAABAAAAAAAZAPL/AAABAAAAAAAaAPL/AAABAAAAAAAbAPL/AAABAAAAAAAcAPL/AAABAAAAAAAdAPL/AAABAAAAAAA=")
+tile_set = SubResource("TileSet_vivmo")
+
+[node name="Test" type="TileMapLayer" parent="."]
+position = Vector2(1032, -296)
+tile_set = ExtResource("19_cegan")
+
+[node name="Ground2" parent="." instance=ExtResource("20_82xsv")]
+z_index = 10
+position = Vector2(10752, -2112)
+scale = Vector2(0.125, 0.125)
+
+[node name="Start" type="Area2D" parent="."]
+position = Vector2(592, -744)
+script = ExtResource("28_xuqvo")
+MyMusicStream = ExtResource("25_0odxb")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Start"]
+shape = SubResource("RectangleShape2D_a6jrf")
+
+[node name="StartArc1" type="AudioStreamPlayer" parent="Start"]
+stream = ExtResource("25_0odxb")
+
+[node name="MeetNPCArc1" type="Area2D" parent="."]
+position = Vector2(3248, -1744)
+script = ExtResource("28_xuqvo")
+MyMusicStream = ExtResource("26_lswn8")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MeetNPCArc1"]
+shape = SubResource("RectangleShape2D_a6jrf")
+
+[node name="StartArc1" type="AudioStreamPlayer" parent="MeetNPCArc1"]
+stream = ExtResource("26_lswn8")
+
+[connection signal="body_entered" from="Start" to="Start" method="_onBodyEntered"]
+[connection signal="body_exited" from="Start" to="Start" method="_onBodyExited"]
+[connection signal="body_entered" from="MeetNPCArc1" to="MeetNPCArc1" method="_onBodyEntered"]
+[connection signal="body_exited" from="MeetNPCArc1" to="MeetNPCArc1" method="_onBodyExited"]
