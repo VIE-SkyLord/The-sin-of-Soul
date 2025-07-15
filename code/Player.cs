@@ -17,6 +17,7 @@ public partial class Player : CharacterBody2D
 	[Export] public float DashCooldown = 1.0f; // Thời gian chờ giữa các lần lướt (giây)
 	[Export] public float ReleaseJumpVelocity = -500.0f; // Vận tốc nhảy khi thoát xác
 	[Export] public float ReleaseHorizontalVelocity = 200.0f; // Vận tốc ngang khi thoát xác
+	[Export] public float KnockbackVelocity = 600.0f; // Vận tốc đẩy lùi khi va chạm kẻ địch sau lướt
 
 	private bool isPossessing = false;
 	private Node2D possessedEnemy = null;
@@ -28,12 +29,12 @@ public partial class Player : CharacterBody2D
 	private float dashCooldownTimer = 0.0f; // Đếm thời gian hồi chiêu
 	private uint originalCollisionLayer; // Lưu layer ban đầu của Player
 	private uint originalCollisionMask;
-	private uint originalEnemyCollisionLayer; // Lưu layer ban đầu của Enemy
-	private Node2D affectedEnemy; // Theo dõi Enemy bị ảnh hưởng
+	private Dictionary<Node2D, (uint Layer, uint Mask)> enemyCollisionSettings; // Lưu layer và mask ban đầu của từng Enemy
 	private float mpAccumulator = 0.0f; // Biến tích lũy MP thập phân
 	private float potionCooldownTimer = 0.0f; // Delay giữa các lần sử dụng bình máu
 	private const float PotionCooldown = 5.0f; // Delay 5 giây
 	private List<TextureRect> healthPotions = new List<TextureRect>(); // Danh sách các bình máu
+	private float dashDirection; // Lưu hướng lướt để sử dụng khi kết thúc
 
 	// Đường dẫn đến texture đầy và rỗng
 	private readonly string fullPotionTexturePath = "res://img/kenney_abstract-platformer/PNG/GUI/Status/Healing_Potion.png";
@@ -52,6 +53,7 @@ public partial class Player : CharacterBody2D
 		originalCollisionLayer = CollisionLayer; // Lưu layer ban đầu của Player
 		CollisionMask &= ~(1u << 4); // Không va chạm với layer 5 ("DeadEnemy")
 		originalCollisionMask = CollisionMask; // Lưu mask ban đầu sau khi điều chỉnh
+		enemyCollisionSettings = new Dictionary<Node2D, (uint Layer, uint Mask)>(); // Khởi tạo dictionary
 		Log("Player initialized at position: " + Position);
 		SetProcessInput(true); // Ensure input processing is always enabled
 		
@@ -106,13 +108,13 @@ public partial class Player : CharacterBody2D
 		// Xử lý né tránh (dodge)
 		if (Input.IsActionJustPressed("dodge") && !isPossessing && !isDashing && dashCooldownTimer <= 0 && CurSoulMP>=20)
 		{
-			float direction = Input.GetAxis("move_left", "move_right");
-			if (direction != 0)
+			dashDirection = Input.GetAxis("move_left", "move_right");
+			if (dashDirection != 0)
 			{
 				//Tiêu hao Mana
 				CurSoulMP = Mathf.Max(0, CurSoulMP - 20);
 				GD.Print($"Player dash. Current MP: {CurSoulMP}");
-				StartDash(direction);
+				StartDash(dashDirection);
 			}
 		}
 		
@@ -130,7 +132,6 @@ public partial class Player : CharacterBody2D
 		{
 			Heal(30);
 		}
-		
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -196,11 +197,11 @@ public partial class Player : CharacterBody2D
 		isDashing = true;
 		dashTimer = DashDuration;
 		dashCooldownTimer = DashCooldown;
+		dashDirection = direction;
 
-		// Giữ CollisionLayer là layer 1, chỉ điều chỉnh CollisionMask
-		CollisionMask = 1u << 2;  // Chỉ va chạm với layer 3 (World)
-		SetCollisionMaskValue(2, false); // Tắt va chạm với layer 2 (Enemy)
-		//SetCollisionMaskValue(4, false); // Tắt va chạm với layer 5 (DeadEnemy)
+		// Tắt va chạm với layer 2 (Enemy) trong CollisionMask của Player
+		CollisionMask = 1u << 2; // Chỉ va chạm với layer 3 (World)
+		SetCollisionMaskValue(2, false); // Đảm bảo tắt layer 2 (Enemy)
 
 		// Giữ CollisionShape2D hoạt động
 		if (playerCollision != null && playerCollision.Disabled)
@@ -208,13 +209,17 @@ public partial class Player : CharacterBody2D
 			playerCollision.Disabled = false;
 		}
 
-		// Tìm và tạm thời vô hiệu hóa va chạm của Enemy gần nhất
-		affectedEnemy = FindNearestEnemy();
-		if (affectedEnemy != null && affectedEnemy is CharacterBody2D enemyBody)
+		// Lưu và vô hiệu hóa va chạm của tất cả Enemy trong nhóm "Enemies"
+		enemyCollisionSettings.Clear();
+		foreach (Node2D enemy in GetTree().GetNodesInGroup("Enemies"))
 		{
-			uint originalEnemyMask = enemyBody.CollisionMask;
-			enemyBody.CollisionMask &= (uint)~(1u << 0); // Loại bỏ layer 1 (Player) khỏi CollisionMask của Enemy
-			GD.Print($"Adjusted CollisionMask of enemy {affectedEnemy.Name} to: {enemyBody.CollisionMask}");
+			if (enemy is CharacterBody2D enemyCharacter)
+			{
+				enemyCollisionSettings[enemy] = (enemyCharacter.CollisionLayer, enemyCharacter.CollisionMask);
+				enemyCharacter.CollisionLayer &= ~(1u << 0); // Loại bỏ layer 1 (Player) khỏi CollisionLayer
+				enemyCharacter.CollisionMask &= ~(1u << 0); // Loại bỏ layer 1 (Player) khỏi CollisionMask
+				GD.Print($"Adjusted CollisionLayer of enemy {enemy.Name} to: {enemyCharacter.CollisionLayer}, CollisionMask to: {enemyCharacter.CollisionMask}");
+			}
 		}
 
 		// Áp dụng vận tốc dash
@@ -226,15 +231,21 @@ public partial class Player : CharacterBody2D
 	{
 		isDashing = false;
 
-		// Khôi phục CollisionMask ban đầu của Player
-		CollisionMask = originalCollisionMask;   // Khôi phục về 7
+		// Khôi phục CollisionMask và CollisionLayer ban đầu của Player
+		CollisionMask = originalCollisionMask;   // Khôi phục về giá trị ban đầu
+		CollisionLayer = originalCollisionLayer; // Khôi phục layer ban đầu
 
-		// Khôi phục CollisionMask của Enemy
-		if (affectedEnemy != null && affectedEnemy is CharacterBody2D enemyBody)
+		// Khôi phục CollisionLayer và CollisionMask của tất cả Enemy
+		foreach (var entry in enemyCollisionSettings)
 		{
-			GD.Print($"Restored CollisionMask of enemy {affectedEnemy.Name}");
+			if (entry.Key is CharacterBody2D enemyCharacter && entry.Key != null)
+			{
+				enemyCharacter.CollisionLayer = entry.Value.Layer; // Khôi phục layer ban đầu
+				enemyCharacter.CollisionMask = entry.Value.Mask; // Khôi phục mask ban đầu
+				GD.Print($"Restored CollisionLayer of enemy {entry.Key.Name} to: {enemyCharacter.CollisionLayer}, CollisionMask to: {enemyCharacter.CollisionMask}");
+			}
 		}
-		affectedEnemy = null;
+		enemyCollisionSettings.Clear();
 
 		// Đảm bảo CollisionShape2D được kích hoạt
 		if (playerCollision != null && playerCollision.Disabled)
@@ -243,8 +254,39 @@ public partial class Player : CharacterBody2D
 			GD.Print("CollisionShape2D re-enabled in EndDash");
 		}
 
-		// Đặt lại vận tốc ngang
-		Velocity = new Vector2(0, Velocity.Y);
+		// Kiểm tra va chạm với kẻ địch tại điểm kết thúc lướt
+		Node2D collidedEnemy = null;
+		var collision = MoveAndCollide(Velocity * (float)GetPhysicsProcessDeltaTime(), true, 0.0f, true); // Test collision without moving
+		if (collision != null)
+		{
+			var collider = collision.GetCollider() as Node2D;
+			if (collider != null && collider.IsInGroup("Enemies"))
+			{
+				collidedEnemy = collider;
+				// Tạm thời vô hiệu hóa MoveAndSlide của enemy để không bị đẩy
+				if (collider is CharacterBody2D enemyCharacter)
+				{
+					enemyCharacter.Velocity = Vector2.Zero; // Ngăn enemy di chuyển do va chạm
+				}
+			}
+		}
+
+		if (collidedEnemy != null)
+		{
+			// Áp dụng lực đẩy lùi cho người chơi
+			float knockbackDirection = -dashDirection; // Đẩy lùi ngược hướng lướt
+			Velocity = new Vector2(knockbackDirection * KnockbackVelocity, ReleaseJumpVelocity); // Áp dụng lực đẩy lùi
+			GD.Print($"Player collided with enemy {collidedEnemy.Name} at end of dash. Applying knockback: {Velocity}");
+			Log($"Player knocked back after dash collision with {collidedEnemy.Name} at position: {collidedEnemy.Position}, new player velocity: {Velocity}");
+		}
+		else
+		{
+			// Nếu không va chạm, đặt lại vận tốc ngang
+			Velocity = new Vector2(0, Velocity.Y);
+		}
+
+		// Di chuyển với vận tốc mới (bao gồm knockback nếu có)
+		MoveAndSlide();
 		GD.Print($"Ended dash, CollisionLayer: {CollisionLayer}, CollisionMask restored: {CollisionMask}, CollisionShape Disabled: {playerCollision?.Disabled}, Position: {Position}");
 	}
 
@@ -281,7 +323,7 @@ public partial class Player : CharacterBody2D
 		Position = _currentBody.Position;
 		if (possessedEnemy is Enermy enemyScript)
 		{
-			originalEnemyCollisionLayer = enemyScript.CollisionLayer; // Lưu layer ban đầu của Enemy (layer 2)
+			enemyCollisionSettings[enemy] = (enemyScript.CollisionLayer, enemyScript.CollisionMask); // Lưu layer và mask
 			enemyScript.SetPossessed(true);
 			enemyScript.SetPhysicsProcess(true);
 			Log($"Possessed enemy: {enemy.Name} at position: {enemy.Position}, enemy layer: {enemyScript.CollisionLayer}");
@@ -338,14 +380,22 @@ public partial class Player : CharacterBody2D
 
 	public void TakeDamage(int damage)
 	{
+		if (isDashing)
+		{
+			GD.Print($"Damage ignored during dash. Attempted damage: {damage}");
+			Log($"Damage ignored during dash. Attempted damage: {damage}, Player position: {Position}");
+			return;
+		}
 		CurSoulHP = Mathf.Max(0, CurSoulHP - damage);
 		GD.Print($"Player took {damage} damage. Current HP: {CurSoulHP}");
+		Log($"Player took {damage} damage. Current HP: {CurSoulHP}, Player position: {Position}");
 	}
 
 	public void Heal(int amount)
 	{
 		CurSoulHP = Mathf.Min(MaxSoulHP, CurSoulHP + amount);
 		GD.Print($"Player healed {amount}. Current HP: {CurSoulHP}");
+		Log($"Player healed {amount}. Current HP: {CurSoulHP}, Player position: {Position}");
 	}
 	
 	private void UseHealthPotion()
@@ -368,7 +418,6 @@ public partial class Player : CharacterBody2D
 			CurSoulHP = Mathf.Min(MaxSoulHP, CurSoulHP + healAmount);
 			GD.Print($"Used Health Potion, healed {healAmount}. Current HP: {CurSoulHP}");
 			Log($"Used Health Potion, healed {healAmount}, remaining full potions: {healthPotions.Count(p => p.Texture?.ResourcePath == fullPotionTexturePath)}");
-
 			// Thay texture từ đầy sang rỗng
 			potionToUse.Texture = GD.Load<Texture2D>(emptyPotionTexturePath);
 
