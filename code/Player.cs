@@ -24,7 +24,7 @@ public partial class Player : CharacterBody2D
 	public Node2D _currentBody; // Public for camera to access
 	private static readonly string LogFilePath = Path.Combine(OS.GetUserDataDir(), "player_debug.log");
 	private CollisionShape2D playerCollision; // Reference to player's collision shape
-	private bool isDashing = false; // Trạng thái đang lướt
+	public bool isDashing = false; // Trạng thái đang lướt
 	private float dashTimer = 0.0f; // Đếm thời gian lướt
 	private float dashCooldownTimer = 0.0f; // Đếm thời gian hồi chiêu
 	private uint originalCollisionLayer; // Lưu layer ban đầu của Player

@@ -16,7 +16,22 @@ public partial class AreaMusic : Area2D
 		if (MyMusicStream != null)
 		{
 			bgmPlayer.Stream = MyMusicStream;
-			GD.Print("Audio stream assigned successfully.");
+			// Enable looping for supported audio streams
+			if (MyMusicStream is AudioStreamMP3 mp3Stream)
+			{
+				mp3Stream.Loop = true;
+			}
+			else if (MyMusicStream is AudioStreamOggVorbis oggStream)
+			{
+				oggStream.Loop = true;
+			}
+			// WAV looping is handled differently in Godot 4
+			else if (MyMusicStream.GetClass() == "AudioStreamWAV")
+			{
+				// Godot 4 WAV looping requires setting loop points or using external tools
+				GD.Print("WAV looping may require external configuration or custom handling.");
+			}
+			GD.Print("Audio stream assigned successfully with looping enabled.");
 		}
 		else
 		{
