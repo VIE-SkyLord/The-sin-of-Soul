@@ -24,6 +24,11 @@ public partial class Player : CharacterBody2D
 	public Node2D _currentBody; // Public for camera to access
 	private static readonly string LogFilePath = Path.Combine(OS.GetUserDataDir(), "player_debug.log");
 	private CollisionShape2D playerCollision; // Reference to player's collision shape
+	
+	// Animation và Visual
+	private AnimatedSprite2D animatedSprite;
+	private bool facingRight = true; // Theo dõi hướng mặt của nhân vật
+	
 	public bool isDashing = false; // Trạng thái đang lướt
 	private float dashTimer = 0.0f; // Đếm thời gian lướt
 	private float dashCooldownTimer = 0.0f; // Đếm thời gian hồi chiêu
@@ -37,8 +42,8 @@ public partial class Player : CharacterBody2D
 	private float dashDirection; // Lưu hướng lướt để sử dụng khi kết thúc
 
 	// Đường dẫn đến texture đầy và rỗng
-	private readonly string fullPotionTexturePath = "res://img/kenney_abstract-platformer/PNG/GUI/Status/Healing_Potion.png";
-	private readonly string emptyPotionTexturePath = "res://img/kenney_abstract-platformer/PNG/GUI/Status/Healing_Potion_Used.png";
+	private readonly string fullPotionTexturePath = "res://img/GUI/Status/Healing_Potion.png";
+	private readonly string emptyPotionTexturePath = "res://img/GUI/Status/Healing_Potion_Used.png";
 
 	public override void _Ready()
 	{
@@ -46,6 +51,19 @@ public partial class Player : CharacterBody2D
 		CurSoulMP = MaxSoulMP;//set full MP
 		_currentBody = this; // Default to player body
 		playerCollision = GetNode<CollisionShape2D>("CollisionShape2D"); // Adjust node name if different
+		
+		// Lấy AnimatedSprite2D node
+		animatedSprite = GetNode<AnimatedSprite2D>("AnimatedSprite2D");
+		if (animatedSprite == null)
+		{
+			Log("Warning: AnimatedSprite2D not found on Player node!");
+		}
+		else
+		{
+			// Đặt animation mặc định
+			animatedSprite.Play("idle");
+		}
+		
 		if (playerCollision == null)
 		{
 			Log("Warning: CollisionShape2D not found on Player node!");
@@ -121,6 +139,7 @@ public partial class Player : CharacterBody2D
 		// Sử dụng bình máu với phím U
 		if (@event.IsActionPressed("use_potion") && potionCooldownTimer <= 0 && healthPotions.Count > 0)
 		{
+			GD.Print($"used HP potion");
 			UseHealthPotion();
 		}
 
@@ -181,13 +200,74 @@ public partial class Player : CharacterBody2D
 		{
 			float direction = Input.GetAxis("move_left", "move_right");
 			if (direction != 0 && !isPossessing)
+			{
 				velocity.X = direction * Speed;
+				// Cập nhật hướng quay
+				UpdateFacing(direction);
+			}
 			else if (!isPossessing)
+			{
 				velocity.X = Mathf.MoveToward(Velocity.X, 0, Speed);
+			}
 		}
 
 		Velocity = velocity;
 		MoveAndSlide();
+		
+		// Cập nhật animation dựa trên trạng thái
+		UpdateAnimation();
+	}
+	
+	private void UpdateFacing(float direction)
+	{
+		if (animatedSprite == null) return;
+		
+		if (direction > 0 && !facingRight)
+		{
+			facingRight = true;
+			animatedSprite.FlipH = false;
+		}
+		else if (direction < 0 && facingRight)
+		{
+			facingRight = false;
+			animatedSprite.FlipH = true;
+		}
+	}
+	
+	private void UpdateAnimation()
+	{
+		if (animatedSprite == null || isPossessing) return;
+		
+		// Ưu tiên animation theo thứ tự: dash -> jump/fall -> run -> idle
+		if (isDashing)
+		{
+			if (animatedSprite.Animation != "dash")
+				animatedSprite.Play("dash");
+		}
+		else if (!IsOnFloor())
+		{
+			// Kiểm tra nếu đang rơi hay nhảy
+			if (Velocity.Y < 0)
+			{
+				if (animatedSprite.Animation != "jump")
+					animatedSprite.Play("jump");
+			}
+			else
+			{
+				if (animatedSprite.Animation != "fall")
+					animatedSprite.Play("fall");
+			}
+		}
+		else if (Mathf.Abs(Velocity.X) > 10) // Threshold để tránh animation run khi đứng yên
+		{
+			if (animatedSprite.Animation != "run")
+				animatedSprite.Play("run");
+		}
+		else
+		{
+			if (animatedSprite.Animation != "idle")
+				animatedSprite.Play("idle");
+		}
 	}
 
 	private void StartDash(float direction)
@@ -198,6 +278,9 @@ public partial class Player : CharacterBody2D
 		dashTimer = DashDuration;
 		dashCooldownTimer = DashCooldown;
 		dashDirection = direction;
+		
+		// Cập nhật hướng quay khi dash
+		UpdateFacing(direction);
 
 		// Tắt va chạm với layer 2 (Enemy) trong CollisionMask của Player
 		CollisionMask = 1u << 2; // Chỉ va chạm với layer 3 (World)
@@ -321,7 +404,7 @@ public partial class Player : CharacterBody2D
 		}
 		SetPhysicsProcess(false);
 		Position = _currentBody.Position;
-		if (possessedEnemy is Enermy enemyScript)
+		if (possessedEnemy is Enemy enemyScript)
 		{
 			enemyCollisionSettings[enemy] = (enemyScript.CollisionLayer, enemyScript.CollisionMask); // Lưu layer và mask
 			enemyScript.SetPossessed(true);
@@ -338,7 +421,7 @@ public partial class Player : CharacterBody2D
 	{
 		if (possessedEnemy != null)
 		{
-			if (possessedEnemy is Enermy enemyScript)
+			if (possessedEnemy is Enemy enemyScript)
 			{
 				isPossessing = false;
 				Log($"Enemy state before release: Velocity = {enemyScript.Velocity}, IsOnFloor = {enemyScript.IsOnFloor()}");
@@ -364,6 +447,9 @@ public partial class Player : CharacterBody2D
 				// Áp dụng vận tốc nhảy ra
 				float horizontalDirection = enemyScript.Velocity.X >= 0 ? 1.0f : -1.0f; // Dựa vào hướng của Enemy
 				Velocity = new Vector2(horizontalDirection * ReleaseHorizontalVelocity, ReleaseJumpVelocity);
+				
+				// Cập nhật hướng quay sau khi release
+				UpdateFacing(horizontalDirection);
 				
 				Log($"Released enemy, returned to player control at position: {Position}, with velocity: {Velocity}, enemy layer changed to: {enemyScript.CollisionLayer}");
 			}
