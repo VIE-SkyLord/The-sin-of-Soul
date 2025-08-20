@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://es1meeit5af4"]
+
+[node name="Menu" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 728.0
+offset_top = 264.0
+offset_right = 768.0
+offset_bottom = 304.0
+scale = Vector2(3, 3)
+
+[node name="Title" type="Label" parent="."]
+texture_filter = 1
+layout_mode = 0
+offset_right = 129.0
+offset_bottom = 23.0
+text = "The Sins of Souls"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MenuContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 108.0
+offset_bottom = 125.0
+
+[node name="Play" type="Button" parent="MenuContainer"]
+layout_mode = 2
+text = "Play"
+
+[node name="Setting" type="Button" parent="MenuContainer"]
+layout_mode = 2
+text = "Setting"
+
+[node name="ExitGame" type="Button" parent="MenuContainer"]
+layout_mode = 2
+text = "Exit game"

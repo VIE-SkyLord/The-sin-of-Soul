@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bg8213nlxdlxw"
+path="res://.godot/imported/1.Meet Vigil (Companion).mp3-9112984c0eea10395059015fbed8d230.mp3str"
+
+[deps]
+
+source_file="res://sound/1.Meet Vigil (Companion).mp3"
+dest_files=["res://.godot/imported/1.Meet Vigil (Companion).mp3-9112984c0eea10395059015fbed8d230.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
