@@ -432,38 +432,58 @@ public partial class Player : CharacterBody2D
 	private Node2D FindNearestPossessTarget()
 	{
 		Node2D nearest = null;
-		float nearestDistance = 150.0f;
-
+		float nearestDistance = 320.0f;
+		
+		GD.Print("Bắt đầu tìm target để nhập xác...");
+		
 		// Check summoned monster first
 		if (summonedMonster != null && !summonedMonster.IsQueuedForDeletion())
 		{
 			float distance = Position.DistanceTo(summonedMonster.Position);
+			GD.Print($"Summoned monster: {summonedMonster.Name}, distance: {distance}");
 			if (distance < nearestDistance)
 			{
 				nearestDistance = distance;
 				nearest = summonedMonster;
+				GD.Print($"Chọn summoned monster: {nearest.Name}");
 			}
 		}
 
-		// Check ALL enemies, including those below possession threshold
+		// Check ALL enemies
 		foreach (Node2D enemy in GetTree().GetNodesInGroup("Enemies"))
 		{
-			if (CanPossessEnemy(enemy))
+			if (enemy.IsQueuedForDeletion()) continue;
+			
+			float distance = Position.DistanceTo(enemy.Position);
+			bool canPossess = CanPossessEnemy(enemy);
+			
+			GD.Print($"Enemy: {enemy.Name}, distance: {distance}, canPossess: {canPossess}");
+			
+			if (canPossess && distance < nearestDistance)
 			{
-				float distance = Position.DistanceTo(enemy.Position);
-				if (distance < nearestDistance)
-				{
-					nearestDistance = distance;
-					nearest = enemy;
-				}
+				nearestDistance = distance;
+				nearest = enemy;
+				GD.Print($"Chọn enemy: {nearest.Name}");
 			}
 		}
 
+		if (nearest == null)
+		{
+			GD.Print("Không tìm thấy target nào trong phạm vi!");
+		}
+		else
+		{
+			GD.Print($"Target được chọn: {nearest.Name}, distance: {nearestDistance}");
+		}
+		
 		return nearest;
 	}
 	
 	private bool CanPossessEnemy(Node2D enemy)
 	{
+		//test
+		//return true;
+		
 		// Luôn cho phép nhập xác quái triệu hồi
 		if (enemy == summonedMonster) return true;
 		
@@ -472,9 +492,9 @@ public partial class Player : CharacterBody2D
 		if (currentHp <= 0) return true;
 		
 		// Kiểm tra ngưỡng possession
-		if (enemy.HasMethod("get_PossessThresholdF"))
+		if (enemy.HasMethod("GetPossessThresholdF"))
 		{
-			float threshold = (float)enemy.Call("get_PossessThresholdF");
+			float threshold = (float)enemy.Call("GetPossessThresholdF");
 			int maxHp = GetMonsterMaxHealth(enemy);
 			float healthRatio = (float)currentHp / maxHp;
 			

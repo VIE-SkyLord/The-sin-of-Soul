@@ -315,7 +315,6 @@ points = PackedVector2Array(-49.713, 103.192, -72.6516, 38.8041, -71.7256, -17.1
 collision_layer = 2
 collision_mask = 21
 script = ExtResource("1_oewy8")
-PossessThresholdF = 1.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_8pk5i")
