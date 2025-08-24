@@ -57,6 +57,10 @@ public partial class SlashSwordEnemy : CharacterBody2D
 
 	public float gravity = ProjectSettings.GetSetting("physics/2d/default_gravity").AsSingle();
 	
+	// Thêm các biến để lưu collision gốc
+	private uint _originalCollisionLayer;
+	private uint _originalCollisionMask;
+	
 	// Add to SlashSwordEnemy.cs and LightArcherEnemy.cs
 	[Export] private float PossessThresholdF = 0.2f;
 	public int CurrentHealth { get { return _currentHealth; } set { _currentHealth = value; } }
@@ -108,6 +112,8 @@ public partial class SlashSwordEnemy : CharacterBody2D
 		_currentHealth = MaxHealth;
 		_patrolPointA = GlobalPosition + Vector2.Left * 150;
 		_patrolPointB = GlobalPosition + Vector2.Right * 150;
+		_originalCollisionLayer = CollisionLayer;
+		_originalCollisionMask = CollisionMask;
 	}
 
 	private void InitializeAudio()
@@ -734,10 +740,14 @@ public partial class SlashSwordEnemy : CharacterBody2D
 		{
 			_currentState = EnemyState.Idle;
 			_isAttackingUninterruptible = false;
+			SetPhysicsProcess(false); // Tắt AI physics
+			SetProcess(false); // Tắt AI logic
 		}
 		else
 		{
 			_currentState = EnemyState.Idle;
+			SetPhysicsProcess(true); // Bật lại AI physics
+			SetProcess(true); // Bật lại AI logic
 		}
 	}
 
@@ -763,6 +773,37 @@ public partial class SlashSwordEnemy : CharacterBody2D
 	
 	public float get_PossessThresholdF(){
 		return PossessThresholdF;
+	}
+	
+	// Thêm các phương thức để truy cập collision gốc
+	public uint GetOriginalCollisionLayer() => _originalCollisionLayer;
+	public uint GetOriginalCollisionMask() => _originalCollisionMask;
+	public void SetOriginalCollisionLayer(uint layer, uint mask)
+	{
+		_originalCollisionLayer = layer;
+		_originalCollisionMask = mask;
+	}
+	
+	public void PerformAttack()
+	{
+		if (_currentState == EnemyState.TripleAttack || _currentState == EnemyState.StrongAttack)
+			return; // Đang tấn công, không thể tấn công tiếp
+		
+		if (_target == null)
+			FindTarget();
+		
+		if (_target != null && GlobalPosition.DistanceTo(_target.GlobalPosition) <= AttackRange)
+		{
+			// Thực hiện tấn công dựa trên khoảng cách
+			if (GlobalPosition.DistanceTo(_target.GlobalPosition) <= HeavyAttackRange && GD.Randf() < 0.3f)
+			{
+				StartStrongAttack();
+			}
+			else
+			{
+				StartTripleAttack();
+			}
+		}
 	}
 
 	public override void _Draw()

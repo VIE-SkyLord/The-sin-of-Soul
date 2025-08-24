@@ -221,6 +221,14 @@ public partial class Player : CharacterBody2D
 		if (dashCooldownTimer > 0) dashCooldownTimer -= deltaF;
 		if (jumpCooldownTimer > 0) jumpCooldownTimer -= deltaF;
 		if (potionCooldownTimer > 0) potionCooldownTimer -= deltaF;
+		
+		// Nếu đang nhập xác, sử dụng vật lý của enemy
+		if (isPossessing && possessedEnemy is CharacterBody2D enemyBody)
+		{
+			// Xử lý input và vật lý cho enemy
+			ProcessPossessedEnemyPhysics(enemyBody, delta);
+			return;
+		}
 
 		if (isDashing)
 		{
@@ -551,9 +559,30 @@ public partial class Player : CharacterBody2D
 		isPossessing = true;
 		_currentBody = target;
 
-		if (target.HasMethod("set_IsControlledByPlayer"))
-			target.Call("set_IsControlledByPlayer", true);
+		// Chuyển đổi collision và group
+		if (target is CharacterBody2D targetBody)
+		{
+			// Lưu lại collision layer/mask gốc của quái
+			if (target.HasMethod("GetOriginalCollisionLayer"))
+				target.Call("SetOriginalCollisionLayer", targetBody.CollisionLayer, targetBody.CollisionMask);
+			
+			// Thiết lập collision layer/mask của player cho quái
+			targetBody.CollisionLayer = originalCollisionLayer;
+			targetBody.CollisionMask = originalCollisionMask;
+		}
 
+		// Chuyển group từ enemy sang player
+		if (target.IsInGroup("Enemies"))
+		{
+			target.RemoveFromGroup("Enemies");
+			target.AddToGroup("Player");
+		}
+
+		// Tắt AI và bật điều khiển bởi người chơi
+		if (target.HasMethod("SetIsControlledByPlayer"))
+			target.Call("SetIsControlledByPlayer", true);
+
+		// Ẩn player và tắt collision
 		Visible = false;
 		if (playerCollision != null) playerCollision.Disabled = true;
 
@@ -569,16 +598,43 @@ public partial class Player : CharacterBody2D
 		float hostRatio = (float)hostHp / hostMaxHp;
 		CurSoulHP = Mathf.Max(1, (int)(MaxSoulHP * hostRatio));
 
+		// Khôi phục collision và group của quái
+		if (possessedEnemy is CharacterBody2D targetBody)
+		{
+			// Khôi phục collision layer/mask gốc
+			if (possessedEnemy.HasMethod("GetOriginalCollisionLayer"))
+			{
+				var originalLayer = (uint)possessedEnemy.Call("GetOriginalCollisionLayer");
+				var originalMask = (uint)possessedEnemy.Call("GetOriginalCollisionMask");
+				targetBody.CollisionLayer = originalLayer;
+				targetBody.CollisionMask = originalMask;
+			}
+			else
+			{
+				// Mặc định nếu không có thông tin gốc
+				targetBody.CollisionLayer = 1u << 1; // Enemy layer
+				targetBody.CollisionMask = (1u << 0) | (1u << 2); // Player và World
+			}
+		}
+
+		// Khôi phục group
+		if (possessedEnemy.IsInGroup("Player"))
+		{
+			possessedEnemy.RemoveFromGroup("Player");
+			possessedEnemy.AddToGroup("Enemies");
+		}
+
+		// Tắt điều khiển bởi người chơi, bật lại AI
+		if (possessedEnemy.HasMethod("SetIsControlledByPlayer"))
+			possessedEnemy.Call("SetIsControlledByPlayer", false);
+
 		// Thu thập xác nếu nó chết
 		if (hostHp <= 0 && possessedEnemy != summonedMonster)
 		{
 			CollectMonster(possessedEnemy);
 		}
 
-		// Bật lại AI quái
-		if (possessedEnemy.HasMethod("set_IsControlledByPlayer"))
-			possessedEnemy.Call("set_IsControlledByPlayer", false);
-
+		// Khôi phục player
 		isPossessing = false;
 		_currentBody = this;
 
@@ -808,6 +864,65 @@ public partial class Player : CharacterBody2D
 			return UnlockedSlots[slotIndex] == 1;
 		}
 		return false;
+	}
+	
+	private void ProcessPossessedEnemyPhysics(CharacterBody2D enemyBody, double delta)
+	{
+		float deltaF = (float)delta;
+		Vector2 velocity = enemyBody.Velocity;
+		
+		// Áp dụng trọng lực
+		if (!enemyBody.IsOnFloor())
+			velocity.Y += Gravity * deltaF;
+		
+		// Xử lý di chuyển theo input
+		float direction = Input.GetAxis("move_left", "move_right");
+		if (!isDashing) // Nếu không đang dash
+		{
+			float speed = enemyBody.Get("Speed").AsSingle() is float s ? s : Speed;
+			velocity.X = Mathf.MoveToward(velocity.X, direction * speed, speed);
+		}
+		
+		// Xử lý nhảy
+		if (Input.IsActionJustPressed("move_up") && enemyBody.IsOnFloor())
+		{
+			float jumpVel = enemyBody.Get("JumpVelocity").AsSingle() is float j ? j : JumpVelocity;
+			velocity.Y = jumpVel;
+		}
+		
+		// Cập nhật velocity và di chuyển
+		enemyBody.Velocity = velocity;
+		enemyBody.MoveAndSlide();
+		
+		// Cập nhật animation
+		var animSprite = enemyBody.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+		if (animSprite != null)
+		{
+			string anim = GetEnemyCurrentAnimation(enemyBody.IsOnFloor(), velocity);
+			if (animSprite.Animation != anim)
+			{
+				animSprite.Play(anim);
+			}
+			
+			// Cập nhật hướng nhìn
+			if (direction != 0)
+			{
+				bool newFacingRight = direction > 0;
+				if (newFacingRight != facingRight)
+				{
+					facingRight = newFacingRight;
+					animSprite.FlipH = !facingRight;
+				}
+			}
+		}
+	}
+
+	private string GetEnemyCurrentAnimation(bool onFloor, Vector2 velocity)
+	{
+		if (isDashing) return "dash";
+		if (onFloor) return Mathf.Abs(velocity.X) > 50 ? "run" : "idle";
+		if (velocity.Y < -50) return "jump";
+		return "fall";
 	}
 
 	private void Log(string message)
