@@ -58,7 +58,7 @@ public partial class SlashSwordEnemy : CharacterBody2D
 	public float gravity = ProjectSettings.GetSetting("physics/2d/default_gravity").AsSingle();
 	
 	// Add to SlashSwordEnemy.cs and LightArcherEnemy.cs
-	[Export] public float PossessThresholdF = 0.2f;
+	[Export] private float PossessThresholdF = 0.2f;
 	public int CurrentHealth { get { return _currentHealth; } set { _currentHealth = value; } }
 
 	public override void _Ready()
@@ -721,6 +721,48 @@ public partial class SlashSwordEnemy : CharacterBody2D
 		
 		var deathTimer = GetTree().CreateTimer(3.0f);
 		deathTimer.Timeout += () => { QueueFree(); };
+	}
+	
+	public bool CanBePossessed()
+	{
+		return CurrentHealth <= 0 || (float)CurrentHealth / MaxHealth <= PossessThresholdF;
+	}
+
+	public void SetIsControlledByPlayer(bool controlled)
+	{
+		if (controlled)
+		{
+			_currentState = EnemyState.Idle;
+			_isAttackingUninterruptible = false;
+		}
+		else
+		{
+			_currentState = EnemyState.Idle;
+		}
+	}
+
+	public int GetMaxHP()
+	{
+		return MaxHealth;
+	}
+
+	public int GetHP()
+	{
+		return CurrentHealth;
+	}
+
+	public void SetHP(int hp)
+	{
+		CurrentHealth = Mathf.Clamp(hp, 0, MaxHealth);
+	}
+
+	public int GetDamage()
+	{
+		return Damage;
+	}
+	
+	public float get_PossessThresholdF(){
+		return PossessThresholdF;
 	}
 
 	public override void _Draw()

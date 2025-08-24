@@ -788,6 +788,44 @@ public partial class LightArcherEnemy : CharacterBody2D
 		var deathTimer = GetTree().CreateTimer(3.0f);
 		deathTimer.Timeout += () => { QueueFree(); };
 	}
+	
+	public bool CanBePossessed()
+	{
+		return CurrentHealth <= 0 || (float)CurrentHealth / MaxHealth <= PossessThresholdF;
+	}
+
+	public void SetIsControlledByPlayer(bool controlled)
+	{
+		if (controlled)
+		{
+			_currentState = EnemyState.Idle;
+			_isAttackingUninterruptible = false;
+		}
+		else
+		{
+			_currentState = EnemyState.Idle;
+		}
+	}
+
+	public int GetMaxHP()
+	{
+		return MaxHealth;
+	}
+
+	public int GetHP()
+	{
+		return CurrentHealth;
+	}
+
+	public void SetHP(int hp)
+	{
+		CurrentHealth = Mathf.Clamp(hp, 0, MaxHealth);
+	}
+
+	public int GetDamage()
+	{
+		return Damage;
+	}
 
 	// Debug information
 	public override void _Draw()

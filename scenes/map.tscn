@@ -1158,9 +1158,8 @@ shape = SubResource("CapsuleShape2D_qcc5i")
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Character/Player"]
 scale = Vector2(1.20754, 1.1835)
 sprite_frames = SubResource("SpriteFrames_litwm")
-animation = &"slidewall"
+animation = &"jump"
 autoplay = "idle"
-frame_progress = 0.209248
 
 [node name="Enemy" type="Node" parent="."]
 
