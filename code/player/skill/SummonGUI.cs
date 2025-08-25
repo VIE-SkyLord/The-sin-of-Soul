@@ -15,15 +15,30 @@ public partial class SummonGUI : Control
 
 	public override void _Ready()
 	{
+		ProcessMode = ProcessModeEnum.Always; // Quan trọng: Luôn xử lý input ngay cả khi tạm dừng
 		Visible = false;
-		player = GetTree().GetFirstNodeInGroup("Player") as Player;
+		// Tìm player node đúng cách hơn
+		player = GetTree().Root.GetNodeOrNull<Player>("Character/Player"); // Thay "Main/Player" bằng đường dẫn đến player node của bạn
+		
+		// Hoặc sử dụng phương pháp tìm kiếm an toàn hơn
+		if (player == null)
+		{
+			var players = GetTree().GetNodesInGroup("Player");
+			if (players.Count > 0)
+				player = players[0] as Player;
+		}
+		
+		if (player == null)
+		{
+			GD.PrintErr("Không thể tìm thấy Player!");
+			return;
+		}
 		
 		// Tạo các slot
 		for (int i = 0; i < MaxSlots; i++)
 		{
 			SummonSlot slot = SlotScene.Instantiate() as SummonSlot;
 			slot.SlotIndex = i;
-			slot.Visible = i < 2; // Chỉ 2 slot đầu tiên mở khóa
 			AddChild(slot);
 			slots.Add(slot);
 			
@@ -32,6 +47,7 @@ public partial class SummonGUI : Control
 		}
 		
 		UpdateSlotPositions();
+		UpdateSlotInfo(); // Cập nhật thông tin slot ngay khi ready
 	}
 
 	public override void _Input(InputEvent @event)
@@ -39,11 +55,13 @@ public partial class SummonGUI : Control
 		if (@event.IsActionPressed("open_summon_gui"))
 		{
 			ToggleGUI();
+			GetViewport().SetInputAsHandled(); // Quan trọng: Đánh dấu sự kiện đã xử lý
 		}
 		
 		if (isOpen && @event.IsActionPressed("ui_cancel"))
 		{
 			CloseGUI();
+			GetViewport().SetInputAsHandled();
 		}
 	}
 
@@ -54,11 +72,13 @@ public partial class SummonGUI : Control
 		
 		if (isOpen)
 		{
+			GD.Print("Mở Summon GUI");
 			GetTree().Paused = true;
 			UpdateSlotInfo();
 		}
 		else
 		{
+			GD.Print("Đóng Summon GUI");
 			GetTree().Paused = false;
 		}
 	}
@@ -68,6 +88,7 @@ public partial class SummonGUI : Control
 		isOpen = false;
 		Visible = false;
 		GetTree().Paused = false;
+		GD.Print("Đóng Summon GUI (bằng ESC)");
 	}
 
 	private void UpdateSlotPositions()
@@ -88,13 +109,14 @@ public partial class SummonGUI : Control
 	{
 		for (int i = 0; i < slots.Count; i++)
 		{
-			if (i < player.MonsterScenes.Length && player.MonsterScenes[i] != null)
+			if (i < player.MonsterScenes.Length && 
+				player.MonsterScenes[i] != null && 
+				player.IsSlotUnlocked(i))
 			{
 				slots[i].SetMonsterInfo(
 					player.MonsterScenes[i].ResourcePath,
 					player.SummonCosts[i]
 				);
-				slots[i].Disabled = !player.IsSlotUnlocked(i); // Sửa thành phương thức
 			}
 			else
 			{

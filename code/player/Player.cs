@@ -412,24 +412,13 @@ public partial class Player : CharacterBody2D
 
 	public void SummonMonster(int slot)
 	{
-		if (MonsterScenes[slot] == null)
-		{
-			GD.PrintErr($"Monster scene in slot {slot} is null!");
-			return;
-		}
-
+		if (MonsterScenes[slot] == null) return;
+		
 		Node2D monster = MonsterScenes[slot].Instantiate() as Node2D;
-		if (monster == null)
-		{
-			GD.PrintErr($"Failed to instantiate monster from slot {slot}!");
-			return;
-		}
-
 		monster.Position = Position + new Vector2(facingRight ? 60 : -60, 0);
 		GetParent().AddChild(monster);
 		summonedMonster = monster;
 		CurSoulSP -= SummonCosts[slot];
-		GD.Print($"Summoned monster from slot {slot}. SP: {CurSoulSP}");
 	}
 	
 	private void UpdateSpecialAbilities(float delta)

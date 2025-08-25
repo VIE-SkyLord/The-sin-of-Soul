@@ -1,4 +1,4 @@
-[gd_scene load_steps=170 format=4 uid="uid://dl3v21fgndiv8"]
+[gd_scene load_steps=171 format=4 uid="uid://dl3v21fgndiv8"]
 
 [ext_resource type="Texture2D" uid="uid://dfi1sfife64hn" path="res://icon.svg" id="1_2klcf"]
 [ext_resource type="TileSet" uid="uid://b2pdba3mcfvm0" path="res://titlemap/ground.tres" id="1_gldc4"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://mkdgevs3npxc" path="res://img/Player/player_side.png" id="5_30iet"]
 [ext_resource type="Texture2D" uid="uid://d2pr5y82ewiqd" path="res://img/Player/player_idle.png" id="6_5u2yt"]
 [ext_resource type="Texture2D" uid="uid://bcer8wojje4gf" path="res://img/Player/player_jump.png" id="7_5u2yt"]
+[ext_resource type="PackedScene" uid="uid://5eb5as6d8cn4" path="res://scenes/SummonGUI.tscn" id="7_fq663"]
 [ext_resource type="Texture2D" uid="uid://0pu6og4skk0c" path="res://img/Player/player_run.png" id="7_mkblt"]
 [ext_resource type="PackedScene" uid="uid://tv2pnojtyn23" path="res://scenes/enemies/Skeleton.tscn" id="8_6ek7f"]
 [ext_resource type="Texture2D" uid="uid://drr17f0cy0shb" path="res://asset/Mossy Tileset/Mossy - TileSet.png" id="9_2cfcp"]
@@ -1141,6 +1142,8 @@ collision_mask = 27
 position = Vector2(15594, 610)
 scale = Vector2(0.2, 0.2)
 collision_mask = 27
+
+[node name="CanvasLayer" parent="." instance=ExtResource("7_fq663")]
 
 [node name="Character" type="Node" parent="."]
 
