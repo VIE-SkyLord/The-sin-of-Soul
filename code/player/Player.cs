@@ -123,7 +123,7 @@ public partial class Player : CharacterBody2D
 		}
 	}
 
-	public override void _Input(InputEvent @event)
+	public override void _UnhandledInput(InputEvent @event)
 	{
 		/*for (int i = 1; i <= 6; i++)
 		{
@@ -182,16 +182,43 @@ public partial class Player : CharacterBody2D
 
 		if (@event.IsActionPressed("attack") && isPossessing && _currentBody != null)
 		{
-			GD.Print($"Attempting attack with {_currentBody.Name}");
-			if (_currentBody.HasMethod("PerformAttack"))
+			GD.Print($"Attack pressed - isPossessing: {isPossessing}, _currentBody: {_currentBody.Name}");
+	
+			// Kiểm tra trạng thái attack
+			bool canAttack = true;
+			if (_currentBody.HasMethod("IsAttacking"))
 			{
-				_currentBody.Call("PerformAttack");
+				canAttack = !(bool)_currentBody.Call("IsAttacking");
+				GD.Print($"Can attack: {canAttack}");
 			}
-			else
+			
+			if (canAttack)
 			{
-				GD.Print($"No PerformAttack method in {_currentBody.Name}");
+				// ... phần xử lý attack
+				GD.Print($"Attempting attack with {_currentBody.Name}");
+			
+				// Đảm bảo cập nhật hướng nhìn trước khi tấn công
+				float direction = Input.GetAxis("move_left", "move_right");
+				if (direction != 0)
+				{
+					facingRight = direction > 0;
+					if (_currentBody.HasMethod("UpdateFacing"))
+					{
+						_currentBody.Call("UpdateFacing", direction);
+					}
+				}
+				
+				if (_currentBody.HasMethod("PerformAttack"))
+				{
+					_currentBody.Call("PerformAttack");
+				}
+				else
+				{
+					GD.Print($"No PerformAttack method in {_currentBody.Name}");
+				}
 			}
 		}
+		
 		if (@event.IsActionPressed("stealth") && !isStealth && stealthCooldownTimer <= 0 && CurSoulMP >= 30)
 		{
 			ActivateStealth();
@@ -570,6 +597,22 @@ public partial class Player : CharacterBody2D
 			return;
 		}
 
+		// CẬP NHẬT QUAN TRỌNG: Thiết lập hướng của enemy theo hướng của player
+		if (target.HasMethod("UpdateFacing"))
+		{
+			float direction = facingRight ? 1f : -1f;
+			target.Call("UpdateFacing", direction);
+		}
+		else
+		{
+			// Fallback: Cập nhật trực tiếp nếu enemy không có method UpdateFacing
+			var sprite = target.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+			if (sprite != null)
+			{
+				sprite.FlipH = !facingRight;
+			}
+		}
+
 		int hostMaxHp = GetMonsterMaxHealth(target);
 		float playerRatio = (float)CurSoulHP / MaxSoulHP;
 		int hostHp = Mathf.CeilToInt(hostMaxHp * playerRatio);
@@ -910,18 +953,44 @@ public partial class Player : CharacterBody2D
 			velocity.Y = jumpVel;
 		}
 		
+		// Xử lý attack - QUAN TRỌNG: Kiểm tra input attack ở đây
+		if (Input.IsActionJustPressed("attack") && !isDashing)
+		{
+			GD.Print($"Attempting attack with {_currentBody.Name}");
+			
+			// Đảm bảo cập nhật hướng nhìn trước khi tấn công
+			if (direction != 0)
+			{
+				facingRight = direction > 0;
+				if (_currentBody.HasMethod("UpdateFacing"))
+				{
+					_currentBody.Call("UpdateFacing", direction);
+				}
+			}
+			
+			if (_currentBody.HasMethod("CanAttack") && (bool)_currentBody.Call("CanAttack"))
+			{
+				_currentBody.Call("PerformAttack");
+			}
+		}
+		
 		// Cập nhật velocity và di chuyển
 		enemyBody.Velocity = velocity;
 		enemyBody.MoveAndSlide();
 		
-		// Cập nhật animation
+		// Cập nhật animation và hướng nhìn - QUAN TRỌNG
 		var animSprite = enemyBody.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
 		if (animSprite != null)
 		{
-			string anim = GetEnemyCurrentAnimation(enemyBody.IsOnFloor(), velocity);
-			if (animSprite.Animation != anim)
+			// CHỈ thay đổi animation nếu không đang attack
+			string currentAnim = animSprite.Animation.ToString();
+			if (!currentAnim.Contains("attack") && !currentAnim.Contains("heavy") && !currentAnim.Contains("normal"))
 			{
-				animSprite.Play(anim);
+				string anim = GetEnemyCurrentAnimation(enemyBody.IsOnFloor(), velocity);
+				if (animSprite.Animation != anim)
+				{
+					animSprite.Play(anim);
+				}
 			}
 			
 			// Cập nhật hướng nhìn
@@ -932,6 +1001,12 @@ public partial class Player : CharacterBody2D
 				{
 					facingRight = newFacingRight;
 					animSprite.FlipH = !facingRight;
+					
+					// Cập nhật hướng tấn công
+					if (enemyBody.HasMethod("UpdateAttackAreaFacing"))
+					{
+						enemyBody.Call("UpdateAttackAreaFacing");
+					}
 				}
 			}
 		}
@@ -940,6 +1015,18 @@ public partial class Player : CharacterBody2D
 	private string GetEnemyCurrentAnimation(bool onFloor, Vector2 velocity)
 	{
 		if (isDashing) return "dash";
+		
+		// QUAN TRỌNG: Ưu tiên animation attack
+		var animSprite = _currentBody.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+		if (animSprite != null)
+		{
+			string currentAnim = animSprite.Animation.ToString();
+			if (currentAnim.Contains("attack") || currentAnim.Contains("heavy") || currentAnim.Contains("normal"))
+			{
+				return currentAnim;
+			}
+		}
+		
 		if (onFloor) return Mathf.Abs(velocity.X) > 50 ? "run" : "idle";
 		if (velocity.Y < -50) return "jump";
 		return "fall";

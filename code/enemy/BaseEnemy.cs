@@ -31,6 +31,9 @@ public partial class BaseEnemy : CharacterBody2D
 	protected float _stunDuration = 0.0f;
 	protected Node2D _target;
 	protected bool _isAttackingUninterruptible = false;
+	
+	// THÊM BIẾN MỚI: Theo dõi trạng thái attack
+	protected bool _isAttacking = false;
 
 	// Original collision settings
 	protected uint _originalCollisionLayer;
@@ -411,6 +414,22 @@ public partial class BaseEnemy : CharacterBody2D
 	public bool IsDead()
 	{
 		return _currentHealth <= 0;
+	}
+	
+	public void UpdateAttackAreaFacing()
+	{
+		UpdateNormalAttackAreaFacing();
+		if (_heavyAttackArea != null)
+		{
+			UpdateHeavyAttackAreaFacing();
+		}
+	}
+	
+	public bool IsAttacking => _isAttacking;
+	
+	public bool CanAttack()
+	{
+		return _canAttack && _attackCooldown <= 0 && !_isAttacking && !_isAttackingUninterruptible;
 	}
 
 	public override void _Draw()

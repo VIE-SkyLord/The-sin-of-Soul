@@ -376,7 +376,7 @@ public partial class SlashSwordEnemy : BaseEnemy
 
 	public override void PerformAttack()
 	{
-		if (_currentState == EnemyState.TripleAttack || _currentState == EnemyState.StrongAttack)
+		if (_currentState == EnemyState.TripleAttack || _currentState == EnemyState.StrongAttack || _isAttackingUninterruptible)
 			return;
 		
 		if (_target == null)

@@ -377,7 +377,7 @@ public partial class LightArcherEnemy : BaseEnemy
 
 	public override void PerformAttack()
 	{
-		if (_currentState == EnemyState.HeavyAttack || _currentState == EnemyState.NormalAttack)
+		if (_currentState == EnemyState.HeavyAttack || _currentState == EnemyState.NormalAttack || _isAttackingUninterruptible)
 			return;
 		
 		if (_target == null)

@@ -174,6 +174,8 @@ public partial class Skeleton : BaseEnemy
 		_damageDealt = false;
 		_isAttacking = true;
 		_currentState = SkeletonState.Attacking;
+		
+		// QUAN TRỌNG: Đảm bảo animation được play
 		_animatedSprite.Play("attack");
 		
 		var damageTimer = GetTree().CreateTimer(0.3f);
@@ -323,7 +325,10 @@ public partial class Skeleton : BaseEnemy
 
 	public override void PerformAttack()
 	{
-		if (_isAttacking) return;
+		if (_isAttacking || _currentState == SkeletonState.Attacking) return;
+	
+		// Cập nhật hướng tấn công trước khi attack
+		UpdateAttackAreaFacing();
 		StartAttack();
 	}
 
