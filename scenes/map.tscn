@@ -1152,7 +1152,7 @@ position = Vector2(12640, 448)
 collision_mask = 7
 script = ExtResource("5_5u2yt")
 DashDuration = 0.5
-MonsterScenes = [ExtResource("8_6ek7f"), null, null, null, null, null]
+MonsterScenes = [ExtResource("8_6ek7f"), ExtResource("13_mkblt"), null, null, null, null]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Character/Player" groups=["Player"]]
 scale = Vector2(3.15, 4.256)

@@ -1,8 +1,10 @@
-[gd_scene load_steps=44 format=3 uid="uid://dcnbjjngqm4vo"]
+[gd_scene load_steps=46 format=3 uid="uid://dcnbjjngqm4vo"]
 
 [ext_resource type="Script" uid="uid://css6i41ruv4vt" path="res://code/enemy/SlashSwordEnemy.cs" id="1_oewy8"]
+[ext_resource type="AudioStream" uid="uid://cwfkv14q1h0wb" path="res://sound/enemies/light_attack-slash_sword.mp3" id="2_6u3mp"]
 [ext_resource type="Texture2D" uid="uid://10lvsnrg60an" path="res://img/Enemies/Slash Sword/FreeKnight_v1/Colour1/NoOutline/120x80_PNGSheets/_Idle.png" id="2_oewy8"]
 [ext_resource type="Texture2D" uid="uid://p768tuyi5b36" path="res://img/Enemies/Slash Sword/FreeKnight_v1/Colour1/NoOutline/120x80_PNGSheets/_Run.png" id="3_p6wg4"]
+[ext_resource type="AudioStream" uid="uid://uy18brlq78y3" path="res://sound/enemies/heavy_attack-slash_sword.mp3" id="3_xagss"]
 [ext_resource type="Texture2D" uid="uid://bp8qgje3mxu8h" path="res://img/Enemies/Slash Sword/FreeKnight_v1/Colour1/NoOutline/120x80_PNGSheets/_AttackNoMovement.png" id="4_lmmsa"]
 [ext_resource type="Texture2D" uid="uid://cofhh486n7k87" path="res://img/Enemies/Slash Sword/FreeKnight_v1/Colour1/NoOutline/120x80_PNGSheets/_AttackComboNoMovement.png" id="4_p6wg4"]
 
@@ -50,6 +52,22 @@ region = Rect2(960, 0, 110, 80)
 atlas = ExtResource("2_oewy8")
 region = Rect2(1080, 0, 110, 80)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_0shh3"]
+atlas = ExtResource("4_lmmsa")
+region = Rect2(0, 0, 110, 80)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_g2fwq"]
+atlas = ExtResource("4_lmmsa")
+region = Rect2(120, 0, 110, 80)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1cwcp"]
+atlas = ExtResource("4_lmmsa")
+region = Rect2(240, 0, 110, 80)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_assqq"]
+atlas = ExtResource("4_lmmsa")
+region = Rect2(360, 0, 110, 80)
+
 [sub_resource type="AtlasTexture" id="AtlasTexture_1wrhj"]
 atlas = ExtResource("3_p6wg4")
 region = Rect2(0, 0, 110, 80)
@@ -89,22 +107,6 @@ region = Rect2(960, 0, 110, 80)
 [sub_resource type="AtlasTexture" id="AtlasTexture_xdqr3"]
 atlas = ExtResource("3_p6wg4")
 region = Rect2(1080, 0, 110, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_0shh3"]
-atlas = ExtResource("4_lmmsa")
-region = Rect2(0, 0, 110, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_g2fwq"]
-atlas = ExtResource("4_lmmsa")
-region = Rect2(120, 0, 110, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_1cwcp"]
-atlas = ExtResource("4_lmmsa")
-region = Rect2(240, 0, 110, 80)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_assqq"]
-atlas = ExtResource("4_lmmsa")
-region = Rect2(360, 0, 110, 80)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_fk10l"]
 atlas = ExtResource("4_p6wg4")
@@ -195,6 +197,29 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
+"texture": SubResource("AtlasTexture_0shh3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0shh3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0shh3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_g2fwq")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1cwcp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_assqq")
+}],
+"loop": true,
+"name": &"normal_attack",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
 "texture": SubResource("AtlasTexture_1wrhj")
 }, {
 "duration": 1.0,
@@ -226,29 +251,6 @@ animations = [{
 }],
 "loop": true,
 "name": &"run",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_0shh3")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_0shh3")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_0shh3")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_g2fwq")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_1cwcp")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_assqq")
-}],
-"loop": true,
-"name": &"strong_attack",
 "speed": 5.0
 }, {
 "frames": [{
@@ -301,7 +303,7 @@ animations = [{
 "texture": SubResource("AtlasTexture_a3pg1")
 }],
 "loop": true,
-"name": &"triple_attack",
+"name": &"special_attack",
 "speed": 5.0
 }]
 
@@ -315,6 +317,8 @@ points = PackedVector2Array(-49.713, 103.192, -72.6516, 38.8041, -71.7256, -17.1
 collision_layer = 2
 collision_mask = 21
 script = ExtResource("1_oewy8")
+LightAttackAudioStream = ExtResource("2_6u3mp")
+HeavyAttackAudioStream = ExtResource("3_xagss")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_8pk5i")
@@ -323,7 +327,7 @@ shape = SubResource("CapsuleShape2D_8pk5i")
 position = Vector2(0, -72)
 scale = Vector2(3.00833, 3.41071)
 sprite_frames = SubResource("SpriteFrames_g4tto")
-animation = &"fall"
+animation = &"special_attack"
 autoplay = "idle"
 
 [node name="NormalAttackArea" type="Area2D" parent="."]
@@ -331,9 +335,9 @@ autoplay = "idle"
 [node name="CollisionShape2D" type="CollisionShape2D" parent="NormalAttackArea"]
 shape = SubResource("ConvexPolygonShape2D_p6wg4")
 
-[node name="HeavyAttackArea" type="Area2D" parent="."]
+[node name="SpecialAttackArea" type="Area2D" parent="."]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="HeavyAttackArea"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SpecialAttackArea"]
 position = Vector2(64, -8)
 rotation = 1.55426
 shape = SubResource("ConvexPolygonShape2D_oewy8")

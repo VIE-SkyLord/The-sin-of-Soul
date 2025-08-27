@@ -180,43 +180,16 @@ public partial class Player : CharacterBody2D
 			Heal(30);
 		}
 
-		if (@event.IsActionPressed("attack") && isPossessing && _currentBody != null)
+		if (@event.IsActionPressed("normal_attack") && isPossessing && _currentBody != null)
 		{
-			GD.Print($"Attack pressed - isPossessing: {isPossessing}, _currentBody: {_currentBody.Name}");
-	
-			// Kiểm tra trạng thái attack
-			bool canAttack = true;
-			if (_currentBody.HasMethod("IsAttacking"))
-			{
-				canAttack = !(bool)_currentBody.Call("IsAttacking");
-				GD.Print($"Can attack: {canAttack}");
-			}
-			
-			if (canAttack)
-			{
-				// ... phần xử lý attack
-				GD.Print($"Attempting attack with {_currentBody.Name}");
-			
-				// Đảm bảo cập nhật hướng nhìn trước khi tấn công
-				float direction = Input.GetAxis("move_left", "move_right");
-				if (direction != 0)
-				{
-					facingRight = direction > 0;
-					if (_currentBody.HasMethod("UpdateFacing"))
-					{
-						_currentBody.Call("UpdateFacing", direction);
-					}
-				}
-				
-				if (_currentBody.HasMethod("PerformAttack"))
-				{
-					_currentBody.Call("PerformAttack");
-				}
-				else
-				{
-					GD.Print($"No PerformAttack method in {_currentBody.Name}");
-				}
-			}
+			GD.Print($"Normal attack pressed - isPossessing: {isPossessing}, _currentBody: {_currentBody.Name}");
+			HandlePossessedAttack(false); // false for normal attack
+		}
+
+		if (@event.IsActionPressed("special_attack") && isPossessing && _currentBody != null)
+		{
+			GD.Print($"Special attack pressed - isPossessing: {isPossessing}, _currentBody: {_currentBody.Name}");
+			HandlePossessedAttack(true); // true for special attack
 		}
 		
 		if (@event.IsActionPressed("stealth") && !isStealth && stealthCooldownTimer <= 0 && CurSoulMP >= 30)
@@ -419,6 +392,31 @@ public partial class Player : CharacterBody2D
 		GetParent().AddChild(monster);
 		summonedMonster = monster;
 		CurSoulSP -= SummonCosts[slot];
+		
+		// QUAN TRỌNG: Đặt quái ở trạng thái controlled để không tự di chuyển
+		if (monster.HasMethod("SetIsControlledByPlayer"))
+		{
+			monster.Call("SetIsControlledByPlayer", true);
+		}
+		
+		// THÊM: Đặt collision layer/mask đặc biệt cho quái triệu hồi
+		if (monster is CharacterBody2D body)
+		{
+			body.CollisionLayer = 1u << 5;  // Layer riêng cho quái triệu hồi
+			body.CollisionMask = (1u << 1) | (1u << 2); // Chỉ va chạm với Enemy và World
+		}
+		
+		// THÊM: Cho vào group Allies thay vì Enemies
+		if (monster.IsInGroup("Enemies"))
+		{
+			monster.RemoveFromGroup("Enemies");
+		}
+		monster.AddToGroup("Allies");
+		
+		// QUAN TRỌNG: Thêm vào group SummonedMonsters để phân biệt
+		monster.AddToGroup("SummonedMonsters");
+		
+		GD.Print($"Summoned {monster.Name} - Controlled state set, added to Allies group");
 	}
 	
 	private void UpdateSpecialAbilities(float delta)
@@ -645,48 +643,57 @@ public partial class Player : CharacterBody2D
 	{
 		if (!isPossessing || possessedEnemy == null) return;
 
+		// 1. LẤY THÔNG TIN MÁU TRƯỚC KHI RESET
 		int hostMaxHp = GetMonsterMaxHealth(possessedEnemy);
 		int hostHp = GetMonsterHealth(possessedEnemy);
 		float hostRatio = (float)hostHp / hostMaxHp;
 		CurSoulHP = Mathf.Max(1, (int)(MaxSoulHP * hostRatio));
 
-		// Khôi phục collision và group của quái
+		// 2. KHÔI PHỤC COLLISION VÀ GROUP CỦA QUÁI
 		if (possessedEnemy is CharacterBody2D targetBody)
 		{
-			// Khôi phục collision layer/mask gốc
-			if (possessedEnemy.HasMethod("GetOriginalCollisionLayer"))
+			// QUAN TRỌNG: Nếu là quái TRIỆU HỒI, giữ nguyên collision layer/mask
+			if (possessedEnemy != summonedMonster)
 			{
-				var originalLayer = (uint)possessedEnemy.Call("GetOriginalCollisionLayer");
-				var originalMask = (uint)possessedEnemy.Call("GetOriginalCollisionMask");
-				targetBody.CollisionLayer = originalLayer;
-				targetBody.CollisionMask = originalMask;
-			}
-			else
-			{
-				// Mặc định nếu không có thông tin gốc
-				targetBody.CollisionLayer = 1u << 1; // Enemy layer
-				targetBody.CollisionMask = (1u << 0) | (1u << 2); // Player và World
+				if (possessedEnemy.HasMethod("GetOriginalCollisionLayer"))
+				{
+					var originalLayer = (uint)possessedEnemy.Call("GetOriginalCollisionLayer");
+					var originalMask = (uint)possessedEnemy.Call("GetOriginalCollisionMask");
+					targetBody.CollisionLayer = originalLayer;
+					targetBody.CollisionMask = originalMask;
+				}
+				else
+				{
+					// Mặc định nếu không có thông tin gốc
+					targetBody.CollisionLayer = 1u << 1; // Enemy layer
+					targetBody.CollisionMask = (1u << 0) | (1u << 2); // Player và World
+				}
 			}
 		}
 
-		// Khôi phục group
+		// 3. KHÔI PHỤC GROUP - QUAN TRỌNG: Nếu là quái TRIỆU HỒI, KHÔNG cho lại vào group Enemies
 		if (possessedEnemy.IsInGroup("Player"))
 		{
 			possessedEnemy.RemoveFromGroup("Player");
-			possessedEnemy.AddToGroup("Enemies");
+			
+			// CHỈ thêm vào group Enemies nếu KHÔNG phải quái triệu hồi
+			if (possessedEnemy != summonedMonster)
+			{
+				possessedEnemy.AddToGroup("Enemies");
+			}
 		}
 
-		// Tắt điều khiển bởi người chơi, bật lại AI
+		// 4. TẮT ĐIỀU KHIỂN BỞI NGƯỜI CHƠI
 		if (possessedEnemy.HasMethod("SetIsControlledByPlayer"))
 			possessedEnemy.Call("SetIsControlledByPlayer", false);
 
-		// Thu thập xác nếu nó chết
+		// 5. Thu thập xác nếu nó chết VÀ KHÔNG phải quái triệu hồi
 		if (hostHp <= 0 && possessedEnemy != summonedMonster)
 		{
 			CollectMonster(possessedEnemy);
 		}
 
-		// Khôi phục player
+		// 6. KHÔI PHỤC PLAYER
 		isPossessing = false;
 		_currentBody = this;
 
@@ -695,10 +702,26 @@ public partial class Player : CharacterBody2D
 		SetPhysicsProcess(true);
 		SetProcessInput(true);
 
+		// 7. ĐẶT LẠI VỊ TRÍ PLAYER
 		Position = possessedEnemy.Position + new Vector2(0, -20);
+		
+		// 8. RESET TRẠNG THÁI TẤN CÔNG CỦA ENEMY - QUAN TRỌNG!
+		if (possessedEnemy.HasMethod("ResetAttackState"))
+		{
+			possessedEnemy.Call("ResetAttackState");
+		}
+
+		var tempEnemy = possessedEnemy;
 		possessedEnemy = null;
 
-		GD.Print($"👻 Thoát xác: Player còn {CurSoulHP}/{MaxSoulHP} HP");
+		GD.Print($"👻 Thoát xác: Player còn {CurSoulHP}/{MaxSoulHP} HP (theo {hostRatio} máu Xác)");
+
+		// 9. NẾU LÀ QUÁI TRIỆU HỒI, SET LẠI TRẠNG THÁI CONTROLLED
+		if (tempEnemy == summonedMonster && tempEnemy.HasMethod("SetIsControlledByPlayer"))
+		{
+			tempEnemy.Call("SetIsControlledByPlayer", true);
+			GD.Print("Quái triệu hồi trở lại trạng thái controlled");
+		}
 	}
 
 	public void OnMonsterDeath(Node2D deadMonster)
@@ -920,6 +943,9 @@ public partial class Player : CharacterBody2D
 	
 	private void ProcessPossessedEnemyPhysics(CharacterBody2D enemyBody, double delta)
 	{
+		// CHỈ xử lý nếu đang nhập xác
+		if (!isPossessing) return;
+		
 		float deltaF = (float)delta;
 		Vector2 velocity = enemyBody.Velocity;
 		
@@ -927,60 +953,16 @@ public partial class Player : CharacterBody2D
 		if (!enemyBody.IsOnFloor())
 			velocity.Y += Gravity * deltaF;
 		
-		// Xử lý di chuyển theo input
-		float direction = Input.GetAxis("move_left", "move_right");
-		if (!isDashing) // Nếu không đang dash
+		// Xử lý di chuyển theo input - CHỈ KHI KHÔNG TẤN CÔNG
+		bool isAttacking = false;
+		if (enemyBody.HasMethod("IsAttacking"))
+			isAttacking = (bool)enemyBody.Call("IsAttacking");
+		
+		if (!isAttacking && !isDashing)
 		{
+			float direction = Input.GetAxis("move_left", "move_right");
 			float speed = enemyBody.Get("Speed").AsSingle() is float s ? s : Speed;
 			velocity.X = Mathf.MoveToward(velocity.X, direction * speed, speed);
-		}
-		
-		// Xử lý nhảy
-		if (Input.IsActionJustPressed("move_up") && enemyBody.IsOnFloor())
-		{
-			float jumpVel = enemyBody.Get("JumpVelocity").AsSingle() is float j ? j : JumpVelocity;
-			velocity.Y = jumpVel;
-		}
-		
-		// Xử lý attack - QUAN TRỌNG: Kiểm tra input attack ở đây
-		if (Input.IsActionJustPressed("attack") && !isDashing)
-		{
-			GD.Print($"Attempting attack with {_currentBody.Name}");
-			
-			// Đảm bảo cập nhật hướng nhìn trước khi tấn công
-			if (direction != 0)
-			{
-				facingRight = direction > 0;
-				if (_currentBody.HasMethod("UpdateFacing"))
-				{
-					_currentBody.Call("UpdateFacing", direction);
-				}
-			}
-			
-			if (_currentBody.HasMethod("CanAttack") && (bool)_currentBody.Call("CanAttack"))
-			{
-				_currentBody.Call("PerformAttack");
-			}
-		}
-		
-		// Cập nhật velocity và di chuyển
-		enemyBody.Velocity = velocity;
-		enemyBody.MoveAndSlide();
-		
-		// Cập nhật animation và hướng nhìn - QUAN TRỌNG
-		var animSprite = enemyBody.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
-		if (animSprite != null)
-		{
-			// CHỈ thay đổi animation nếu không đang attack
-			string currentAnim = animSprite.Animation.ToString();
-			if (!currentAnim.Contains("attack") && !currentAnim.Contains("heavy") && !currentAnim.Contains("normal"))
-			{
-				string anim = GetEnemyCurrentAnimation(enemyBody.IsOnFloor(), velocity);
-				if (animSprite.Animation != anim)
-				{
-					animSprite.Play(anim);
-				}
-			}
 			
 			// Cập nhật hướng nhìn
 			if (direction != 0)
@@ -989,14 +971,40 @@ public partial class Player : CharacterBody2D
 				if (newFacingRight != facingRight)
 				{
 					facingRight = newFacingRight;
-					animSprite.FlipH = !facingRight;
+					var sprite = enemyBody.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+					if (sprite != null)
+					{
+						sprite.FlipH = !facingRight;
+					}
 					
-					// Cập nhật hướng tấn công
+					// Cập nhật hướng attack area
 					if (enemyBody.HasMethod("UpdateAttackAreaFacing"))
 					{
 						enemyBody.Call("UpdateAttackAreaFacing");
 					}
 				}
+			}
+		}
+		
+		// Xử lý nhảy
+		if (Input.IsActionJustPressed("move_up") && enemyBody.IsOnFloor() && !isAttacking)
+		{
+			float jumpVel = enemyBody.Get("JumpVelocity").AsSingle() is float j ? j : JumpVelocity;
+			velocity.Y = jumpVel;
+		}
+		
+		// Cập nhật velocity và di chuyển
+		enemyBody.Velocity = velocity;
+		enemyBody.MoveAndSlide();
+		
+		// Cập nhật animation
+		var animSprite = enemyBody.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+		if (animSprite != null && !isAttacking)
+		{
+			string anim = GetEnemyCurrentAnimation(enemyBody.IsOnFloor(), velocity);
+			if (animSprite.Animation != anim)
+			{
+				animSprite.Play(anim);
 			}
 		}
 	}
@@ -1019,6 +1027,51 @@ public partial class Player : CharacterBody2D
 		if (onFloor) return Mathf.Abs(velocity.X) > 50 ? "run" : "idle";
 		if (velocity.Y < -50) return "jump";
 		return "fall";
+	}
+	
+	private void HandlePossessedAttack(bool isSpecialAttack)
+	{
+		// Kiểm tra nếu enemy có thể tấn công
+		bool canAttack = true;
+		if (_currentBody.HasMethod("CanAttack"))
+		{
+			canAttack = (bool)_currentBody.Call("CanAttack");
+			GD.Print($"Can attack: {canAttack}");
+		}
+		
+		if (canAttack)
+		{
+			GD.Print($"Attempting {(isSpecialAttack ? "special" : "normal")} attack with {_currentBody.Name}");
+		
+			// Đảm bảo cập nhật hướng nhìn trước khi tấn công
+			float direction = Input.GetAxis("move_left", "move_right");
+			if (direction != 0)
+			{
+				facingRight = direction > 0;
+				if (_currentBody.HasMethod("UpdateFacing"))
+				{
+					_currentBody.Call("UpdateFacing", direction);
+				}
+				
+				// Cập nhật hướng attack area
+				if (_currentBody.HasMethod("UpdateAttackAreaFacing"))
+				{
+					_currentBody.Call("UpdateAttackAreaFacing");
+				}
+			}
+			
+			// GỌI PHƯƠNG THỨC ATTACK PHÙ HỢP
+			string attackMethod = isSpecialAttack ? "PerformSpecialAttack" : "PerformNormalAttack";
+			if (_currentBody.HasMethod(attackMethod))
+			{
+				_currentBody.Call(attackMethod);
+				GD.Print($"{attackMethod} called on {_currentBody.Name}");
+			}
+			else
+			{
+				GD.Print($"No attack method found in {_currentBody.Name}");
+			}
+		}
 	}
 
 	private void Log(string message)

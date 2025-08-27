@@ -2,24 +2,42 @@ using Godot;
 
 public partial class BaseEnemy : CharacterBody2D
 {
+	// Standardized state enum for all enemies
+	public enum EnemyState
+	{
+		Idle,
+		Patrol,
+		Chase,
+		NormalAttack,
+		SpecialAttack,
+		Stunned,
+		Dead
+	}
+
 	// Common properties
 	[Export] public float Speed = 300.0f;
 	[Export] public float JumpVelocity = -400.0f;
 	[Export] public float AttackRange = 100.0f;
-	[Export] public float HeavyAttackRange = 150.0f;
+	[Export] public float SpecialAttackRange = 150.0f;
 	[Export] public float DetectionRange = 640.0f;
 	[Export] public int MaxHealth = 100;
 	[Export] public int Damage = 25;
-	[Export] public int HeavyDamage = 50;
+	[Export] public int SpecialDamage = 50;
 	[Export] public float PossessThresholdF = 1.0f;
+	[Export] public float AttackCooldownDuration = 1.5f;
+	[Export] public float SpecialAttackCooldownDuration = 3.0f;
 
 	// Common components
 	protected AnimatedSprite2D _animatedSprite;
 	protected CollisionShape2D _collisionShape;
 	protected Area2D _normalAttackArea;
-	protected Area2D _heavyAttackArea;
+	protected Area2D _specialAttackArea;
 	protected CollisionShape2D _normalAttackCollision;
-	protected CollisionShape2D _heavyAttackCollision;
+	protected CollisionShape2D _specialAttackCollision;
+
+	// State management
+	protected EnemyState _currentState = EnemyState.Idle;
+	protected EnemyState _previousState = EnemyState.Idle;
 
 	// Common state variables
 	protected int _currentHealth;
@@ -30,26 +48,41 @@ public partial class BaseEnemy : CharacterBody2D
 	protected bool _isStunned = false;
 	protected float _stunDuration = 0.0f;
 	protected Node2D _target;
-	protected bool _isAttackingUninterruptible = false;
-	
-	// THÊM BIẾN MỚI: Theo dõi trạng thái attack
+	protected bool _isPlayerControlled = false;
+
+	// Attack state tracking
 	protected bool _isAttacking = false;
+	protected bool _isAttackingUninterruptible = false;
 
 	// Original collision settings
 	protected uint _originalCollisionLayer;
 	protected uint _originalCollisionMask;
 
+	// Patrol system
+	protected Vector2 _patrolPointA;
+	protected Vector2 _patrolPointB;
+	protected bool _movingToB = true;
+	protected bool _hasPatrolPoints = false;
+
+	public float gravity = ProjectSettings.GetSetting("physics/2d/default_gravity").AsSingle();
+
 	// Properties
 	public int CurrentHealth { get { return _currentHealth; } set { _currentHealth = value; } }
 	public bool IsAttackingUninterruptible => _isAttackingUninterruptible;
-
-	public float gravity = ProjectSettings.GetSetting("physics/2d/default_gravity").AsSingle();
+	public EnemyState CurrentState => _currentState;
 
 	public override void _Ready()
 	{
 		InitializeCommonComponents();
 		InitializeStats();
+		InitializePatrolPoints();
 		ConnectCommonSignals();
+		OnEnemyReady(); // Virtual method for child classes
+	}
+
+	protected virtual void OnEnemyReady()
+	{
+		// Override in child classes for specific initialization
 	}
 
 	protected virtual void InitializeCommonComponents()
@@ -58,7 +91,7 @@ public partial class BaseEnemy : CharacterBody2D
 		_collisionShape = GetNode<CollisionShape2D>("CollisionShape2D");
 		
 		_normalAttackArea = GetNodeOrNull<Area2D>("NormalAttackArea");
-		_heavyAttackArea = GetNodeOrNull<Area2D>("HeavyAttackArea");
+		_specialAttackArea = GetNodeOrNull<Area2D>("SpecialAttackArea");
 		
 		if (_normalAttackArea != null)
 		{
@@ -67,11 +100,11 @@ public partial class BaseEnemy : CharacterBody2D
 			_normalAttackArea.BodyEntered += OnNormalAttackAreaEntered;
 		}
 		
-		if (_heavyAttackArea != null)
+		if (_specialAttackArea != null)
 		{
-			_heavyAttackCollision = _heavyAttackArea.GetNode<CollisionShape2D>("CollisionShape2D");
-			_heavyAttackArea.Monitoring = false;
-			_heavyAttackArea.BodyEntered += OnHeavyAttackAreaEntered;
+			_specialAttackCollision = _specialAttackArea.GetNode<CollisionShape2D>("CollisionShape2D");
+			_specialAttackArea.Monitoring = false;
+			_specialAttackArea.BodyEntered += OnSpecialAttackAreaEntered;
 		}
 	}
 
@@ -80,6 +113,13 @@ public partial class BaseEnemy : CharacterBody2D
 		_currentHealth = MaxHealth;
 		_originalCollisionLayer = CollisionLayer;
 		_originalCollisionMask = CollisionMask;
+	}
+
+	protected virtual void InitializePatrolPoints()
+	{
+		_patrolPointA = GlobalPosition + Vector2.Left * 150;
+		_patrolPointB = GlobalPosition + Vector2.Right * 150;
+		_hasPatrolPoints = true;
 	}
 
 	protected virtual void ConnectCommonSignals()
@@ -93,17 +133,12 @@ public partial class BaseEnemy : CharacterBody2D
 	public override void _PhysicsProcess(double delta)
 	{
 		if (IsDead()) return;
+		if (_isPlayerControlled) return; // Skip AI when player controlled
 
-		UpdateTimers((float)delta);
-
-		if (!IsOnFloor())
-			Velocity = new Vector2(Velocity.X, Velocity.Y + gravity * (float)delta);
-
-		ProcessState();
-
-		if (_target == null)
-			FindTarget();
-
+		float deltaF = (float)delta;
+		UpdateTimers(deltaF);
+		UpdatePhysics(deltaF);
+		ProcessStateLogic();
 		MoveAndSlide();
 	}
 
@@ -118,125 +153,381 @@ public partial class BaseEnemy : CharacterBody2D
 			if (_stunDuration <= 0)
 			{
 				_isStunned = false;
-				GD.Print("Stun ended");
+				TransitionToState(EnemyState.Idle);
 			}
 		}
 	}
 
-	protected virtual void ProcessState()
+	protected virtual void UpdatePhysics(float delta)
 	{
-		// To be implemented by child classes
+		if (!IsOnFloor())
+			Velocity = new Vector2(Velocity.X, Velocity.Y + gravity * delta);
+	}
+
+	protected virtual void ProcessStateLogic()
+	{
+		// Find target if we don't have one
+		if (_target == null)
+			FindTarget();
+
+		// Process current state
+		switch (_currentState)
+		{
+			case EnemyState.Idle:
+				ProcessIdleState();
+				break;
+			case EnemyState.Patrol:
+				ProcessPatrolState();
+				break;
+			case EnemyState.Chase:
+				ProcessChaseState();
+				break;
+			case EnemyState.NormalAttack:
+				ProcessNormalAttackState();
+				break;
+			case EnemyState.SpecialAttack:
+				ProcessSpecialAttackState();
+				break;
+			case EnemyState.Stunned:
+				ProcessStunnedState();
+				break;
+			case EnemyState.Dead:
+				ProcessDeadState();
+				break;
+		}
+	}
+
+	#region State Processing Methods
+
+	protected virtual void ProcessIdleState()
+	{
+		Velocity = new Vector2(0, Velocity.Y);
+		PlayAnimation("idle");
+
+		if (_target != null && CanSeeTarget())
+		{
+			TransitionToState(EnemyState.Chase);
+		}
+		else if (_hasPatrolPoints && _target == null)
+		{
+			TransitionToState(EnemyState.Patrol);
+		}
+	}
+
+	protected virtual void ProcessPatrolState()
+	{
+		if (!_hasPatrolPoints)
+		{
+			TransitionToState(EnemyState.Idle);
+			return;
+		}
+
+		Vector2 targetPoint = _movingToB ? _patrolPointB : _patrolPointA;
+		Vector2 direction = (targetPoint - GlobalPosition).Normalized();
+
+		if (GlobalPosition.DistanceTo(targetPoint) < 30f)
+		{
+			_movingToB = !_movingToB;
+			direction = Vector2.Zero;
+		}
+
+		Velocity = new Vector2(direction.X * Speed * 0.6f, Velocity.Y);
+		UpdateFacing(direction.X);
+		PlayAnimation("run");
+
+		if (_target != null && CanSeeTarget())
+		{
+			TransitionToState(EnemyState.Chase);
+		}
+	}
+
+	protected virtual void ProcessChaseState()
+	{
+		if (_target == null || !CanSeeTarget())
+		{
+			_target = null;
+			TransitionToState(EnemyState.Idle);
+			return;
+		}
+
+		float distanceToTarget = GlobalPosition.DistanceTo(_target.GlobalPosition);
+
+		// Check if we can attack
+		if (CanPerformAttack() && distanceToTarget <= GetCurrentAttackRange())
+		{
+			Vector2 directionToTarget = (_target.GlobalPosition - GlobalPosition).Normalized();
+			UpdateFacing(directionToTarget.X);
+			
+			EnemyState attackType = DecideAttackType();
+			TransitionToState(attackType);
+			return;
+		}
+
+		// Move towards target or idle if close enough
+		if (distanceToTarget > AttackRange * 0.9f)
+		{
+			Vector2 direction = (_target.GlobalPosition - GlobalPosition).Normalized();
+			Velocity = new Vector2(direction.X * Speed, Velocity.Y);
+			UpdateFacing(direction.X);
+			PlayAnimation("run");
+		}
+		else
+		{
+			Velocity = new Vector2(0, Velocity.Y);
+			PlayAnimation("idle");
+		}
+	}
+
+	protected virtual void ProcessNormalAttackState()
+	{
+		Velocity = new Vector2(0, Velocity.Y);
+		// Attack logic handled by child classes
+	}
+
+	protected virtual void ProcessSpecialAttackState()
+	{
+		Velocity = new Vector2(0, Velocity.Y);
+		// Special attack logic handled by child classes
+	}
+
+	protected virtual void ProcessStunnedState()
+	{
+		Velocity = new Vector2(0, Velocity.Y);
+		PlayAnimation("idle");
+	}
+
+	protected virtual void ProcessDeadState()
+	{
+		Velocity = new Vector2(0, Velocity.Y);
+	}
+
+	#endregion
+
+	#region State Management
+
+	protected virtual void TransitionToState(EnemyState newState)
+	{
+		if (_currentState == newState) return;
+
+		_previousState = _currentState;
+		_currentState = newState;
+		OnStateChanged(_previousState, _currentState);
+	}
+
+	protected virtual void OnStateChanged(EnemyState fromState, EnemyState toState)
+	{
+		GD.Print($"{Name} state changed: {fromState} -> {toState}");
+	}
+
+	#endregion
+
+	#region Attack System
+
+	protected virtual bool CanPerformAttack()
+	{
+		return _canAttack && _attackCooldown <= 0 && !_isAttacking && !_isStunned;
+	}
+
+	protected virtual float GetCurrentAttackRange()
+	{
+		return AttackRange;
+	}
+
+	protected virtual EnemyState DecideAttackType()
+	{
+		// Default: 70% normal, 30% special
+		return GD.Randf() < 0.7f ? EnemyState.NormalAttack : EnemyState.SpecialAttack;
+	}
+
+	protected virtual void StartAttack(EnemyState attackType)
+	{
+		_canAttack = false;
+		_isAttacking = true;
+		_damageDealt = false;
+		
+		TransitionToState(attackType);
+		
+		if (attackType == EnemyState.NormalAttack)
+		{
+			PlayAnimation("normal_attack");
+			_attackCooldown = AttackCooldownDuration;
+		}
+		else if (attackType == EnemyState.SpecialAttack)
+		{
+			PlayAnimation("special_attack");
+			_attackCooldown = SpecialAttackCooldownDuration;
+		}
+	}
+
+	protected virtual void EndAttack()
+	{
+		_isAttacking = false;
+		_isAttackingUninterruptible = false;
+		
+		if (_normalAttackArea != null)
+			_normalAttackArea.SetDeferred("monitoring", false);
+		if (_specialAttackArea != null)
+			_specialAttackArea.SetDeferred("monitoring", false);
+		
+		// Cooldown timer to re-enable attacking
+		var cooldownTimer = GetTree().CreateTimer(_attackCooldown);
+		cooldownTimer.Timeout += () => { _canAttack = true; };
+		
+		TransitionToState(EnemyState.Chase);
+	}
+
+	public virtual void PerformNormalAttack()
+	{
+		if (!CanPerformAttack()) return;
+		
+		FindTarget();
+		if (_target != null && GlobalPosition.DistanceTo(_target.GlobalPosition) <= AttackRange)
+		{
+			StartAttack(EnemyState.NormalAttack);
+		}
+	}
+
+	public virtual void PerformSpecialAttack()
+	{
+		if (!CanPerformAttack()) return;
+		
+		FindTarget();
+		if (_target != null && GlobalPosition.DistanceTo(_target.GlobalPosition) <= SpecialAttackRange)
+		{
+			StartAttack(EnemyState.SpecialAttack);
+		}
+	}
+
+	#endregion
+
+	#region Utility Methods
+
+	protected virtual bool CanSeeTarget()
+	{
+		return _target != null && GlobalPosition.DistanceTo(_target.GlobalPosition) <= DetectionRange;
+	}
+
+	protected virtual void PlayAnimation(string animationName)
+	{
+		if (_animatedSprite != null && _animatedSprite.Animation != animationName)
+		{
+			_animatedSprite.Play(animationName);
+		}
 	}
 
 	protected virtual void FindTarget()
 	{
-		var bodies = GetTree().GetNodesInGroup("Player");
-		if (bodies.Count > 0)
+		// Priority: Player > Other enemies > Summoned monsters
+		var players = GetTree().GetNodesInGroup("Player");
+		if (players.Count > 0)
 		{
-			Node2D potentialTarget = bodies[0] as Node2D;
-			if (potentialTarget != null)
+			Node2D player = players[0] as Node2D;
+			if (IsValidTarget(player))
 			{
-				float distance = GlobalPosition.DistanceTo(potentialTarget.GlobalPosition);
-				if (distance <= DetectionRange)
-				{
-					_target = potentialTarget;
-				}
+				_target = player;
+				return;
 			}
 		}
-		else
+		
+		// Find other valid targets based on groups
+		FindAlternativeTargets();
+	}
+
+	protected virtual void FindAlternativeTargets()
+	{
+		if (IsInGroup("Enemies"))
 		{
-			var root = GetTree().CurrentScene;
-			var playerNode = FindPlayerNodeRecursive(root);
-			
-			if (playerNode != null)
-			{
-				float distance = GlobalPosition.DistanceTo(playerNode.GlobalPosition);
-				if (distance <= DetectionRange)
-				{
-					_target = playerNode;
-				}
-			}
+			// Regular enemies target summoned monsters and allies
+			FindTargetInGroups(new[] { "SummonedMonsters", "Allies" });
+		}
+		else if (IsInGroup("SummonedMonsters") || IsInGroup("Allies"))
+		{
+			// Player-controlled entities target enemies
+			FindTargetInGroups(new[] { "Enemies" });
 		}
 	}
 
-	protected Node2D FindPlayerNodeRecursive(Node node)
+	protected void FindTargetInGroups(string[] targetGroups)
 	{
-		if (node is CharacterBody2D body && node != this)
+		Node2D nearestTarget = null;
+		float nearestDistance = DetectionRange;
+		
+		foreach (string group in targetGroups)
 		{
-			string nodeName = node.Name.ToString().ToLower();
-			if (nodeName.Contains("player") || nodeName.Contains("character"))
+			var targets = GetTree().GetNodesInGroup(group);
+			foreach (Node2D target in targets)
 			{
-				return body;
+				if (IsValidTarget(target))
+				{
+					float distance = GlobalPosition.DistanceTo(target.GlobalPosition);
+					if (distance < nearestDistance)
+					{
+						nearestDistance = distance;
+						nearestTarget = target;
+					}
+				}
 			}
 		}
 		
-		foreach (Node child in node.GetChildren())
-		{
-			var result = FindPlayerNodeRecursive(child);
-			if (result != null)
-				return result;
-		}
-		
-		return null;
+		_target = nearestTarget;
+	}
+
+	protected virtual bool IsValidTarget(Node2D potentialTarget)
+	{
+		return potentialTarget != null && 
+			   potentialTarget != this && 
+			   !potentialTarget.IsQueuedForDeletion() &&
+			   potentialTarget.HasMethod("TakeDamage");
 	}
 
 	protected void UpdateFacing(float directionX)
 	{
 		if (Mathf.Abs(directionX) < 0.1f) return;
 
-		if (directionX > 0 && !_facingRight)
+		bool newFacingRight = directionX > 0;
+		if (newFacingRight != _facingRight)
 		{
-			_facingRight = true;
-			_animatedSprite.FlipH = false;
+			_facingRight = newFacingRight;
+			if (_animatedSprite != null)
+				_animatedSprite.FlipH = !_facingRight;
 		}
-		else if (directionX < 0 && _facingRight)
+	}
+
+	protected void UpdateAttackAreaFacing(Area2D area)
+	{
+		if (area == null) return;
+		
+		Vector2 scale = area.Scale;
+		if (!_facingRight)
 		{
-			_facingRight = false;
-			_animatedSprite.FlipH = true;
+			area.Scale = new Vector2(-Mathf.Abs(scale.X), scale.Y);
+		}
+		else
+		{
+			area.Scale = new Vector2(Mathf.Abs(scale.X), scale.Y);
 		}
 	}
 
 	protected void UpdateNormalAttackAreaFacing()
 	{
-		if (_normalAttackArea == null) return;
-		
-		Vector2 scale = _normalAttackArea.Scale;
-		if (!_facingRight)
-		{
-			_normalAttackArea.Scale = new Vector2(-Mathf.Abs(scale.X), scale.Y);
-		}
-		else
-		{
-			_normalAttackArea.Scale = new Vector2(Mathf.Abs(scale.X), scale.Y);
-		}
+		UpdateAttackAreaFacing(_normalAttackArea);
 	}
 
-	protected void UpdateHeavyAttackAreaFacing()
+	protected void UpdateSpecialAttackAreaFacing()
 	{
-		if (_heavyAttackArea == null) return;
-		
-		Vector2 scale = _heavyAttackArea.Scale;
-		if (!_facingRight)
-		{
-			_heavyAttackArea.Scale = new Vector2(-Mathf.Abs(scale.X), scale.Y);
-		}
-		else
-		{
-			_heavyAttackArea.Scale = new Vector2(Mathf.Abs(scale.X), scale.Y);
-		}
+		UpdateAttackAreaFacing(_specialAttackArea);
 	}
+
+	#endregion
+
+	#region Damage and Combat
 
 	public virtual void TakeDamage(int damage)
 	{
 		if (IsDead()) return;
 
-		if (_isAttackingUninterruptible && !_isStunned)
-		{
-			GD.Print($"Attack cannot be interrupted! Taking {damage} damage but continuing attack.");
-		}
-
 		_currentHealth -= damage;
-		GD.Print($"Enemy took {damage} damage. Health: {_currentHealth}/{MaxHealth}");
+		GD.Print($"{Name} took {damage} damage. Health: {_currentHealth}/{MaxHealth}");
 
 		if (_currentHealth <= 0)
 		{
@@ -244,6 +535,7 @@ public partial class BaseEnemy : CharacterBody2D
 		}
 		else
 		{
+			// Flash red
 			_animatedSprite.Modulate = Colors.Red;
 			var colorTimer = GetTree().CreateTimer(0.15f);
 			colorTimer.Timeout += () => { 
@@ -257,17 +549,19 @@ public partial class BaseEnemy : CharacterBody2D
 	{
 		if (IsDead()) return;
 
-		GD.Print($"Enemy stunned for {duration} seconds - interrupting attacks!");
-		
 		_isStunned = true;
 		_stunDuration = duration;
 		_isAttackingUninterruptible = false;
 		
+		// Disable attack areas
 		if (_normalAttackArea != null)
 			_normalAttackArea.SetDeferred("monitoring", false);
-		if (_heavyAttackArea != null)
-			_heavyAttackArea.SetDeferred("monitoring", false);
+		if (_specialAttackArea != null)
+			_specialAttackArea.SetDeferred("monitoring", false);
 		
+		TransitionToState(EnemyState.Stunned);
+		
+		// Flash blue
 		_animatedSprite.Modulate = Colors.Blue;
 		var colorTimer = GetTree().CreateTimer(0.2f);
 		colorTimer.Timeout += () => { 
@@ -281,156 +575,152 @@ public partial class BaseEnemy : CharacterBody2D
 		if (IsDead()) return;
 		
 		if (_isAttackingUninterruptible)
-		{
 			force *= 0.3f;
-		}
 		
 		Velocity = new Vector2(Velocity.X + force.X, Velocity.Y + force.Y);
-		GD.Print($"Knockback applied: {force}");
+	}
+
+	protected virtual void DealDamageToTarget(Node2D target, int damage)
+	{
+		if (target == null || _damageDealt) return;
+
+		_damageDealt = true;
+		target.Call("TakeDamage", damage);
+		GD.Print($"{Name} hit {target.Name} for {damage} damage!");
+
+		if (target.HasMethod("AddKnockback"))
+		{
+			Vector2 knockbackDirection = (target.GlobalPosition - GlobalPosition).Normalized();
+			target.Call("AddKnockback", knockbackDirection * 150);
+		}
 	}
 
 	protected virtual void Die()
 	{
+		TransitionToState(EnemyState.Dead);
 		_isAttackingUninterruptible = false;
-		_animatedSprite.Play("idle");
 		_collisionShape.SetDeferred("disabled", true);
 		
 		if (_normalAttackArea != null)
 			_normalAttackArea.SetDeferred("monitoring", false);
-		if (_heavyAttackArea != null)
-			_heavyAttackArea.SetDeferred("monitoring", false);
+		if (_specialAttackArea != null)
+			_specialAttackArea.SetDeferred("monitoring", false);
 		
-		GD.Print("Enemy died!");
+		PlayAnimation("idle");
 		
 		var deathTimer = GetTree().CreateTimer(3.0f);
 		deathTimer.Timeout += () => { QueueFree(); };
 	}
 
-	public bool CanBePossessed()
-	{
-		return CurrentHealth <= 0 || (float)CurrentHealth / MaxHealth <= PossessThresholdF;
-	}
+	#endregion
+
+	#region Player Control System
 
 	public virtual void SetIsControlledByPlayer(bool controlled)
 	{
+		_isPlayerControlled = controlled;
+		
 		if (controlled)
 		{
-			_isAttackingUninterruptible = false;
+			// Reset attack state and disable AI
+			ResetAttackState();
+			TransitionToState(EnemyState.Idle);
 			SetPhysicsProcess(false);
 			SetProcess(false);
+			GD.Print($"{Name} now controlled by player - AI disabled");
 		}
 		else
 		{
 			SetPhysicsProcess(true);
 			SetProcess(true);
+			TransitionToState(EnemyState.Chase);
+			GD.Print($"{Name} AI enabled");
 		}
 	}
 
-	public int GetMaxHP()
+	public virtual void ResetAttackState()
 	{
-		return MaxHealth;
+		_isAttacking = false;
+		_isAttackingUninterruptible = false;
+		_canAttack = true;
+		_damageDealt = false;
+		
+		if (_normalAttackArea != null)
+			_normalAttackArea.SetDeferred("monitoring", false);
+		if (_specialAttackArea != null)
+			_specialAttackArea.SetDeferred("monitoring", false);
 	}
 
-	public int GetHP()
+	#endregion
+
+	#region Event Handlers
+
+	protected virtual void OnAnimationFinished()
 	{
-		return CurrentHealth;
+		if (_normalAttackArea != null)
+			_normalAttackArea.SetDeferred("monitoring", false);
+		if (_specialAttackArea != null)
+			_specialAttackArea.SetDeferred("monitoring", false);
 	}
 
-	public void SetHP(int hp)
+	protected virtual void OnNormalAttackAreaEntered(Node2D body)
 	{
-		CurrentHealth = Mathf.Clamp(hp, 0, MaxHealth);
+		if (ShouldDamageTarget(body))
+		{
+			DealDamageToTarget(body, Damage);
+			_normalAttackArea.SetDeferred("monitoring", false);
+		}
 	}
 
-	public int GetDamage()
+	protected virtual void OnSpecialAttackAreaEntered(Node2D body)
 	{
-		return Damage;
+		if (ShouldDamageTarget(body))
+		{
+			DealDamageToTarget(body, SpecialDamage);
+			_specialAttackArea.SetDeferred("monitoring", false);
+		}
 	}
-	
-	public float GetPossessThresholdF()
+
+	protected virtual bool ShouldDamageTarget(Node2D body)
 	{
-		return PossessThresholdF;
+		if (body == null || body == this || _damageDealt) return false;
+		if (!body.HasMethod("TakeDamage")) return false;
+
+		// Logic for different control states
+		if (!_isPlayerControlled && body.IsInGroup("Player"))
+			return true;
+		
+		if (_isPlayerControlled && !body.IsInGroup("Allies") && !body.IsInGroup("Player"))
+			return true;
+			
+		return false;
 	}
-	
+
+	#endregion
+
+	#region Public API
+
+	public bool IsDead() => _currentHealth <= 0;
+	public bool CanBePossessed() => CurrentHealth <= 0 || (float)CurrentHealth / MaxHealth <= PossessThresholdF;
+	public bool CanAttack() => _canAttack && _attackCooldown <= 0 && !_isAttacking && !_isAttackingUninterruptible;
+	public bool IsAttacking() => _isAttacking || _isAttackingUninterruptible;
+
+	// Getters for Player class
+	public int GetMaxHP() => MaxHealth;
+	public int GetHP() => CurrentHealth;
+	public void SetHP(int hp) => CurrentHealth = Mathf.Clamp(hp, 0, MaxHealth);
+	public int GetDamage() => Damage;
+	public float GetPossessThresholdF() => PossessThresholdF;
 	public uint GetOriginalCollisionLayer() => _originalCollisionLayer;
 	public uint GetOriginalCollisionMask() => _originalCollisionMask;
+	
 	public void SetOriginalCollisionLayer(uint layer, uint mask)
 	{
 		_originalCollisionLayer = layer;
 		_originalCollisionMask = mask;
 	}
 
-	public virtual void PerformAttack()
-	{
-		// To be implemented by child classes
-	}
-
-	protected virtual void OnAnimationFinished()
-	{
-		if (_normalAttackArea != null)
-			_normalAttackArea.SetDeferred("monitoring", false);
-		if (_heavyAttackArea != null)
-			_heavyAttackArea.SetDeferred("monitoring", false);
-	}
-
-	protected virtual void OnNormalAttackAreaEntered(Node2D body)
-	{
-		if (body.HasMethod("TakeDamage") && body != this && !_damageDealt && _normalAttackArea.Monitoring)
-		{
-			_damageDealt = true;
-			
-			body.Call("TakeDamage", Damage);
-			GD.Print($"*** LIGHT HIT TARGET {body.Name} for {Damage} damage! ***");
-
-			if (body.HasMethod("AddKnockback"))
-			{
-				Vector2 knockbackDirection = (_target.GlobalPosition - GlobalPosition).Normalized();
-				body.Call("AddKnockback", knockbackDirection * 150);
-			}
-			
-			_normalAttackArea.SetDeferred("monitoring", false);
-		}
-	}
-
-	protected virtual void OnHeavyAttackAreaEntered(Node2D body)
-	{
-		if (body.HasMethod("TakeDamage") && body != this && !_damageDealt && _heavyAttackArea.Monitoring)
-		{
-			_damageDealt = true;
-			
-			body.Call("TakeDamage", HeavyDamage);
-			GD.Print($"*** HEAVY HIT TARGET {body.Name} for {HeavyDamage} damage! ***");
-
-			if (body.HasMethod("AddKnockback"))
-			{
-				Vector2 knockbackDirection = (_target.GlobalPosition - GlobalPosition).Normalized();
-				body.Call("AddKnockback", knockbackDirection * 500);
-				GD.Print("Heavy knockback applied!");
-			}
-			
-			_heavyAttackArea.SetDeferred("monitoring", false);
-		}
-	}
-
-	public bool IsDead()
-	{
-		return _currentHealth <= 0;
-	}
-	
-	public void UpdateAttackAreaFacing()
-	{
-		UpdateNormalAttackAreaFacing();
-		if (_heavyAttackArea != null)
-		{
-			UpdateHeavyAttackAreaFacing();
-		}
-	}
-	
-	public bool IsAttacking => _isAttacking;
-	
-	public bool CanAttack()
-	{
-		return _canAttack && _attackCooldown <= 0 && !_isAttacking && !_isAttackingUninterruptible;
-	}
+	#endregion
 
 	public override void _Draw()
 	{
