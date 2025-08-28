@@ -778,6 +778,19 @@ public partial class Player : CharacterBody2D
 		{
 			body.CollisionLayer = 1u << 5;
 			body.CollisionMask = (1u << 1) | (1u << 2);
+			
+			// Apply the same vertical velocity as the player to maintain momentum
+			body.Velocity = new Vector2(0, Velocity.Y);
+			
+			// Ensure physics processing is enabled
+			body.SetPhysicsProcess(true);
+			
+			// Force the monster to apply gravity immediately
+			if (monster is BaseEnemy baseEnemy)
+			{
+				// This ensures the enemy's own physics processing will handle gravity
+				baseEnemy.SetPhysicsProcess(true);
+			}
 		}
 		
 		if (monster.IsInGroup("Enemies"))
@@ -788,6 +801,16 @@ public partial class Player : CharacterBody2D
 		monster.AddToGroup("SummonedMonsters");
 		
 		GD.Print($"Summoned {monster.Name} - Set to controlled state and added to Allies group");
+		
+		// Add a small delay to ensure physics is properly initialized
+		var physicsTimer = GetTree().CreateTimer(0.1f);
+		physicsTimer.Timeout += () => {
+			if (monster is CharacterBody2D charBody && !charBody.IsOnFloor())
+			{
+				// Force a physics update to apply gravity
+				charBody.ForceUpdateTransform();
+			}
+		};
 	}
 
 	public void OnMonsterDeath(Node2D deadMonster)

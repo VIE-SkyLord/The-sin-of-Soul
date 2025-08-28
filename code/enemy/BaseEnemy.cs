@@ -134,12 +134,17 @@ public partial class BaseEnemy : CharacterBody2D
 	public override void _PhysicsProcess(double delta)
 	{
 		if (IsDead()) return;
-		if (_isPlayerControlled) return; // Skip AI when player controlled
-
+		
 		float deltaF = (float)delta;
 		UpdateTimers(deltaF);
 		UpdatePhysics(deltaF);
-		ProcessStateLogic();
+		
+		// Always process physics, even when player controlled
+		if (!_isPlayerControlled)
+		{
+			ProcessStateLogic();
+		}
+		
 		MoveAndSlide();
 	}
 
@@ -161,8 +166,21 @@ public partial class BaseEnemy : CharacterBody2D
 
 	protected virtual void UpdatePhysics(float delta)
 	{
+		// Always apply gravity regardless of control state
 		if (!IsOnFloor())
+		{
 			Velocity = new Vector2(Velocity.X, Velocity.Y + gravity * delta);
+		}
+		
+		// If player-controlled, we might need to handle additional physics
+		if (_isPlayerControlled)
+		{
+			// Ensure we're still affected by gravity even when player-controlled
+			if (!IsOnFloor())
+			{
+				Velocity = new Vector2(Velocity.X, Velocity.Y + gravity * delta);
+			}
+		}
 	}
 
 	protected virtual void ProcessStateLogic()

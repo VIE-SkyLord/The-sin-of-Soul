@@ -48,7 +48,7 @@ public partial class Skeleton : BaseEnemy
 		_isAttackingUninterruptible = true;
 		_damageDealt = false;
 		
-		PlayAnimation("attack");
+		PlayAnimation("normal_attack");
 		UpdateNormalAttackAreaFacing();
 		
 		// Enable damage after 0.3s
@@ -90,7 +90,7 @@ public partial class Skeleton : BaseEnemy
 	{
 		_isMovementLocked = true; // Lock movement
 		
-		PlayAnimation("attack");
+		PlayAnimation("normal_attack");
 		UpdateNormalAttackAreaFacing();
 		
 		GD.Print("Starting skeleton player normal attack - movement locked");
@@ -134,7 +134,7 @@ public partial class Skeleton : BaseEnemy
 	{
 		base.OnAnimationFinished();
 		
-		if (_animatedSprite.Animation == "attack")
+		if (_animatedSprite.Animation == "normal_attack")
 		{
 			_isAttacking = false;
 			_canAttack = true;

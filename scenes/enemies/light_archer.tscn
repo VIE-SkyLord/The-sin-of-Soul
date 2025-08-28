@@ -329,7 +329,14 @@ collision_layer = 2
 collision_mask = 21
 script = ExtResource("1_eah53")
 BowReleaseSound = ExtResource("2_jv47w")
+Speed = 500.0
+JumpVelocity = -700.0
 AttackRange = 640.0
+SpecialAttackRange = 1024.0
+Damage = 20
+SpecialDamage = 40
+AttackCooldownDuration = 3.0
+SpecialAttackCooldownDuration = 10.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_eah53")

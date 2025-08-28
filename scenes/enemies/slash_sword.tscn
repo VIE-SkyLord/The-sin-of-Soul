@@ -319,6 +319,12 @@ collision_mask = 21
 script = ExtResource("1_oewy8")
 LightAttackAudioStream = ExtResource("2_6u3mp")
 HeavyAttackAudioStream = ExtResource("3_xagss")
+Speed = 470.0
+JumpVelocity = -600.0
+AttackRange = 128.0
+SpecialAttackRange = 160.0
+AttackCooldownDuration = 3.0
+SpecialAttackCooldownDuration = 10.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_8pk5i")
@@ -327,7 +333,7 @@ shape = SubResource("CapsuleShape2D_8pk5i")
 position = Vector2(0, -72)
 scale = Vector2(3.00833, 3.41071)
 sprite_frames = SubResource("SpriteFrames_g4tto")
-animation = &"special_attack"
+animation = &"idle"
 autoplay = "idle"
 
 [node name="NormalAttackArea" type="Area2D" parent="."]
