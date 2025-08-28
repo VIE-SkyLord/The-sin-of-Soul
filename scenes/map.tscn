@@ -1148,7 +1148,7 @@ collision_mask = 27
 [node name="Character" type="Node" parent="."]
 
 [node name="Player" type="CharacterBody2D" parent="Character" groups=["Player"]]
-position = Vector2(12640, 448)
+position = Vector2(12648, 496)
 collision_mask = 7
 script = ExtResource("5_5u2yt")
 DashDuration = 0.5

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 public partial class Player : CharacterBody2D
 {
+	// Player stats - unchanged from original
 	[Export] public int MaxSoulHP = 100, CurSoulHP;
 	[Export] public int MaxSoulMP = 100, CurSoulMP, recMpPerSec = 1;
 	[Export] public int MaxSoulSP = 100, CurSoulSP;
@@ -25,21 +26,25 @@ public partial class Player : CharacterBody2D
 	[Export] public int MaxJumps = 2;
 	[Export] public int MaxDashes = 2;
 
+	// Possession system
 	private bool isPossessing = false;
-	private Node2D possessedEnemy = null;
+	private BaseEnemy possessedEnemy = null; // Changed to BaseEnemy type
 	public Node2D _currentBody;
 
+	// Summoning system
 	[Export] public PackedScene[] MonsterScenes = new PackedScene[6];
 	[Export] public int[] SummonCosts = new int[6];
 	[Export] public int[] UnlockedSlots = new int[6] { 1, 1, 0, 0, 0, 0 };
 	public int selectedMonsterSlot = 0;
 	private Node2D summonedMonster = null;
 
+	// Components and state variables (unchanged)
 	private static readonly string LogFilePath = Path.Combine(OS.GetUserDataDir(), "player_debug.log");
 	private CollisionShape2D playerCollision;
 	private AnimatedSprite2D animatedSprite;
 	private bool facingRight = true;
 
+	// Movement and combat state (unchanged)
 	public bool isDashing = false;
 	private float dashTimer = 0.0f;
 	private float dashCooldownTimer = 0.0f;
@@ -47,18 +52,21 @@ public partial class Player : CharacterBody2D
 	private uint originalCollisionMask;
 	private float dashDirection;
 
+	// Regeneration and abilities (unchanged)
 	private float mpAccumulator = 0.0f;
 	private float spAccumulator = 0.0f;
 	private float potionCooldownTimer = 0.0f;
 	private const float PotionCooldown = 5.0f;
 	private List<TextureRect> healthPotions = new List<TextureRect>();
 
+	// Jump system (unchanged)
 	private bool isJumping = false;
 	private float jumpCooldownTimer = 0.0f;
 	private float coyoteTimer = 0.0f;
 	private const float COYOTE_TIME = 0.1f;
 	private const float JUMP_COOLDOWN = 0.3f;
 
+	// Wall slide and special abilities (unchanged)
 	private bool isWallSliding = false;
 	private float wallSlideTimer = 0.0f;
 	private const float WALL_SLIDE_BUFFER_TIME = 0.1f;
@@ -78,6 +86,7 @@ public partial class Player : CharacterBody2D
 
 	public override void _Ready()
 	{
+		// Initialize player stats and components (unchanged)
 		CurSoulHP = MaxSoulHP;
 		CurSoulMP = MaxSoulMP;
 		CurSoulSP = MaxSoulSP;
@@ -89,16 +98,18 @@ public partial class Player : CharacterBody2D
 		AddToGroup("Player");
 
 		animatedSprite = GetNode<AnimatedSprite2D>("AnimatedSprite2D");
-		if (animatedSprite == null) Log("Cảnh báo: Không tìm thấy AnimatedSprite2D!");
+		if (animatedSprite == null) Log("Warning: AnimatedSprite2D not found!");
 		else animatedSprite.Play("idle");
 
-		if (playerCollision == null) Log("Cảnh báo: Không tìm thấy CollisionShape2D!");
+		if (playerCollision == null) Log("Warning: CollisionShape2D not found!");
 
+		// Setup collision layers
 		CollisionLayer = 1u << 0;
 		CollisionMask = (1u << 1) | (1u << 2);
 		originalCollisionLayer = CollisionLayer;
 		originalCollisionMask = CollisionMask;
 
+		// Physics settings (unchanged)
 		WallMinSlideAngle = Mathf.DegToRad(46);
 		FloorBlockOnWall = false;
 		SafeMargin = 0.02f;
@@ -107,6 +118,7 @@ public partial class Player : CharacterBody2D
 		GD.Print($"Player setup - Layer: {CollisionLayer}, Mask: {CollisionMask}");
 		SetProcessInput(true);
 
+		// Initialize health potions
 		foreach (Node node in GetTree().GetNodesInGroup("HealthPotion"))
 		{
 			if (node is TextureRect textureRect)
@@ -115,36 +127,24 @@ public partial class Player : CharacterBody2D
 			}
 		}
 
+		// Setup default monster
 		if (MonsterScenes[0] == null)
 		{
 			MonsterScenes[0] = GD.Load<PackedScene>("res://scenes/Skeleton.tscn");
 			SummonCosts[0] = 30;
-			if (MonsterScenes[0] == null) GD.PrintErr("Không thể tải Skeleton.tscn!");
+			if (MonsterScenes[0] == null) GD.PrintErr("Cannot load Skeleton.tscn!");
 		}
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		/*for (int i = 1; i <= 6; i++)
-		{
-			if (@event.IsActionPressed($"select_monster_{i}"))
-			{
-				selectedMonsterSlot = i - 1;
-				GD.Print($"Selected monster slot: {selectedMonsterSlot + 1}");
-			}
-		}*/
-
-		/*if (@event.IsActionPressed("summon_monster") && !isPossessing && summonedMonster == null && MonsterScenes[selectedMonsterSlot] != null && CurSoulSP >= SummonCosts[selectedMonsterSlot])
-		{
-			SummonMonster(selectedMonsterSlot);
-		}*/
-
+		// Possession system
 		if (@event.IsActionPressed("possess_release"))
 		{
 			GD.Print("Possess/release action pressed, isPossessing: " + isPossessing);
 			if (!isPossessing)
 			{
-				Node2D nearestTarget = FindNearestPossessTarget();
+				BaseEnemy nearestTarget = FindNearestPossessTarget();
 				if (nearestTarget != null) PossessTarget(nearestTarget);
 			}
 			else
@@ -153,6 +153,7 @@ public partial class Player : CharacterBody2D
 			}
 		}
 
+		// Dash system (unchanged)
 		if (@event.IsActionPressed("dodge") && !isPossessing && !isDashing && !isJumping && IsOnFloor() && dashCooldownTimer <= 0 && jumpCooldownTimer <= 0 && CurSoulMP >= 20)
 		{
 			dashDirection = Input.GetAxis("move_left", "move_right");
@@ -164,12 +165,14 @@ public partial class Player : CharacterBody2D
 			}
 		}
 
+		// Potion system (unchanged)
 		if (@event.IsActionPressed("use_potion") && potionCooldownTimer <= 0 && healthPotions.Count > 0)
 		{
-			GD.Print("Đã sử dụng HP potion");
+			GD.Print("Used HP potion");
 			UseHealthPotion();
 		}
 
+		// Debug commands (unchanged)
 		if (@event.IsActionPressed("take_damage"))
 		{
 			TakeDamage(20);
@@ -180,18 +183,20 @@ public partial class Player : CharacterBody2D
 			Heal(30);
 		}
 
+		// UPDATED: Attack system for possessed enemies
 		if (@event.IsActionPressed("normal_attack") && isPossessing && _currentBody != null)
 		{
 			GD.Print($"Normal attack pressed - isPossessing: {isPossessing}, _currentBody: {_currentBody.Name}");
-			HandlePossessedAttack(false); // false for normal attack
+			HandlePossessedAttack(false);
 		}
 
 		if (@event.IsActionPressed("special_attack") && isPossessing && _currentBody != null)
 		{
 			GD.Print($"Special attack pressed - isPossessing: {isPossessing}, _currentBody: {_currentBody.Name}");
-			HandlePossessedAttack(true); // true for special attack
+			HandlePossessedAttack(true);
 		}
 		
+		// Special abilities (unchanged)
 		if (@event.IsActionPressed("stealth") && !isStealth && stealthCooldownTimer <= 0 && CurSoulMP >= 30)
 		{
 			ActivateStealth();
@@ -218,24 +223,26 @@ public partial class Player : CharacterBody2D
 		Vector2 velocity = _currentBody is CharacterBody2D body ? body.Velocity : Velocity;
 		float deltaF = (float)delta;
 
+		// Update timers (unchanged)
 		if (dashCooldownTimer > 0) dashCooldownTimer -= deltaF;
 		if (jumpCooldownTimer > 0) jumpCooldownTimer -= deltaF;
 		if (potionCooldownTimer > 0) potionCooldownTimer -= deltaF;
 		
-		// Nếu đang nhập xác, sử dụng vật lý của enemy
-		if (isPossessing && possessedEnemy is CharacterBody2D enemyBody)
+		// Handle possessed enemy physics
+		if (isPossessing && possessedEnemy != null)
 		{
-			// Xử lý input và vật lý cho enemy
-			ProcessPossessedEnemyPhysics(enemyBody, delta);
+			ProcessPossessedEnemyPhysics(possessedEnemy, delta);
 			return;
 		}
 
+		// Regular player physics (unchanged from original)
 		if (isDashing)
 		{
 			dashTimer -= deltaF;
 			if (dashTimer <= 0) EndDash();
 		}
 
+		// Resource regeneration (unchanged)
 		mpAccumulator += recMpPerSec * deltaF;
 		int mpToAdd = (int)mpAccumulator;
 		if (mpToAdd > 0)
@@ -252,6 +259,7 @@ public partial class Player : CharacterBody2D
 			spAccumulator -= spToAdd;
 		}
 
+		// Physics processing (unchanged from original - keeping all the movement logic)
 		bool onFloor = _currentBody is CharacterBody2D cb && cb.IsOnFloor();
 		bool onWall = _currentBody is CharacterBody2D cb2 && cb2.IsOnWall();
 
@@ -357,11 +365,13 @@ public partial class Player : CharacterBody2D
 			MoveAndSlide();
 		}
 
+		// Update health from summoned monster
 		if (isPossessing && summonedMonster != null)
 		{
 			CurSoulHP = GetMonsterHealth(summonedMonster);
 		}
 
+		// Animation system (unchanged)
 		var animSprite = _currentBody.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
 		if (animSprite != null && (!isPossessing || animSprite.Animation != "attack"))
 		{
@@ -374,13 +384,377 @@ public partial class Player : CharacterBody2D
 		UpdateSpecialAbilities(deltaF);
 	}
 
-	private string GetCurrentAnimation(bool onFloor, Vector2 velocity)
+	#region Possession System - UPDATED for BaseEnemy
+
+	private BaseEnemy FindNearestPossessTarget()
+	{
+		BaseEnemy nearest = null;
+		float nearestDistance = 320.0f;
+		
+		GD.Print("Finding nearest possess target...");
+		
+		// Check summoned monster first
+		if (summonedMonster is BaseEnemy summonedEnemy && !summonedMonster.IsQueuedForDeletion())
+		{
+			float distance = Position.DistanceTo(summonedMonster.Position);
+			GD.Print($"Summoned monster: {summonedMonster.Name}, distance: {distance}");
+			if (distance < nearestDistance)
+			{
+				nearestDistance = distance;
+				nearest = summonedEnemy;
+				GD.Print($"Selected summoned monster: {nearest.Name}");
+			}
+		}
+
+		// Check all enemies
+		foreach (Node node in GetTree().GetNodesInGroup("Enemies"))
+		{
+			if (node is BaseEnemy enemy && !enemy.IsQueuedForDeletion())
+			{
+				float distance = Position.DistanceTo(enemy.Position);
+				bool canPossess = CanPossessEnemy(enemy);
+				
+				GD.Print($"Enemy: {enemy.Name}, distance: {distance}, canPossess: {canPossess}");
+				
+				if (canPossess && distance < nearestDistance)
+				{
+					nearestDistance = distance;
+					nearest = enemy;
+					GD.Print($"Selected enemy: {nearest.Name}");
+				}
+			}
+		}
+
+		if (nearest == null)
+		{
+			GD.Print("No suitable target found within range!");
+		}
+		else
+		{
+			GD.Print($"Target selected: {nearest.Name}, distance: {nearestDistance}");
+		}
+		
+		return nearest;
+	}
+	
+	private bool CanPossessEnemy(BaseEnemy enemy)
+	{
+		// Always allow possession of summoned monsters
+		if (enemy == summonedMonster) return true;
+		
+		// Allow possession of dead enemies
+		if (enemy.IsDead()) return true;
+		
+		// Check possession threshold
+		return enemy.CanBePossessed();
+	}
+
+	private void PossessTarget(BaseEnemy target)
+	{
+		if (target == null || !target.CanBePossessed())
+		{
+			GD.Print($"{target?.Name ?? "Target"} cannot be possessed right now!");
+			return;
+		}
+
+		// Update facing direction to match player
+		if (target.HasMethod("UpdateFacing"))
+		{
+			float direction = facingRight ? 1f : -1f;
+			target.Call("UpdateFacing", direction);
+		}
+		else
+		{
+			var sprite = target.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+			if (sprite != null)
+			{
+				sprite.FlipH = !facingRight;
+			}
+		}
+
+		// Set enemy health based on player health ratio
+		int hostMaxHp = target.GetMaxHP();
+		float playerRatio = (float)CurSoulHP / MaxSoulHP;
+		int hostHp = Mathf.CeilToInt(hostMaxHp * playerRatio);
+		target.SetHP(hostHp);
+
+		possessedEnemy = target;
+		isPossessing = true;
+		_currentBody = target;
+
+		// Handle collision settings
+		if (target is CharacterBody2D targetBody)
+		{
+			target.SetOriginalCollisionLayer(targetBody.CollisionLayer, targetBody.CollisionMask);
+			targetBody.CollisionLayer = originalCollisionLayer;
+			targetBody.CollisionMask = originalCollisionMask;
+		}
+
+		// Update groups
+		if (target.IsInGroup("Enemies"))
+		{
+			target.RemoveFromGroup("Enemies");
+			target.AddToGroup("Player");
+		}
+
+		// Set player control
+		target.SetIsControlledByPlayer(true);
+
+		// Hide player and disable collision
+		Visible = false;
+		if (playerCollision != null) playerCollision.Disabled = true;
+
+		GD.Print($"Possessed {target.Name}: {hostHp}/{hostMaxHp} HP ({playerRatio:P0} of player health)");
+	}
+
+	private void ReleaseTarget()
+	{
+		if (!isPossessing || possessedEnemy == null) return;
+
+		// Update player health based on possessed enemy health
+		int hostMaxHp = possessedEnemy.GetMaxHP();
+		int hostHp = possessedEnemy.GetHP();
+		float hostRatio = (float)hostHp / hostMaxHp;
+		CurSoulHP = Mathf.Max(1, (int)(MaxSoulHP * hostRatio));
+
+		// Restore enemy collision and groups
+		if (possessedEnemy is CharacterBody2D targetBody)
+		{
+			if (possessedEnemy != summonedMonster)
+			{
+				uint originalLayer = possessedEnemy.GetOriginalCollisionLayer();
+				uint originalMask = possessedEnemy.GetOriginalCollisionMask();
+				targetBody.CollisionLayer = originalLayer;
+				targetBody.CollisionMask = originalMask;
+			}
+		}
+
+		// Update groups - don't add summoned monsters back to enemies
+		if (possessedEnemy.IsInGroup("Player"))
+		{
+			possessedEnemy.RemoveFromGroup("Player");
+			
+			if (possessedEnemy != summonedMonster)
+			{
+				possessedEnemy.AddToGroup("Enemies");
+			}
+		}
+
+		// Disable player control
+		possessedEnemy.SetIsControlledByPlayer(false);
+
+		// Collect dead enemy if not a summoned monster
+		if (hostHp <= 0 && possessedEnemy != summonedMonster)
+		{
+			CollectMonster(possessedEnemy);
+		}
+
+		// Restore player
+		isPossessing = false;
+		_currentBody = this;
+
+		if (playerCollision != null) playerCollision.Disabled = false;
+		Visible = true;
+		SetPhysicsProcess(true);
+		SetProcessInput(true);
+
+		Position = possessedEnemy.Position + new Vector2(0, -20);
+		
+		// Reset enemy attack state
+		possessedEnemy.ResetAttackState();
+
+		var tempEnemy = possessedEnemy;
+		possessedEnemy = null;
+
+		GD.Print($"Released possession: Player has {CurSoulHP}/{MaxSoulHP} HP");
+
+		// Re-enable summoned monster control
+		if (tempEnemy == summonedMonster)
+		{
+			tempEnemy.SetIsControlledByPlayer(true);
+			GD.Print("Summoned monster returned to controlled state");
+		}
+	}
+
+	private void ProcessPossessedEnemyPhysics(BaseEnemy enemyBody, double delta)
+	{
+		if (!isPossessing || !(enemyBody is CharacterBody2D body)) return;
+		
+		float deltaF = (float)delta;
+		Vector2 velocity = body.Velocity;
+		
+		// Update timers for player-controlled enemy
+		if (enemyBody.HasMethod("UpdateTimersPlayerControlled"))
+		{
+			enemyBody.Call("UpdateTimersPlayerControlled", deltaF);
+		}
+		
+		// Apply gravity
+		if (!body.IsOnFloor())
+			velocity.Y += Gravity * deltaF;
+		
+		// Check if movement is locked during attack
+		bool isMovementLocked = enemyBody.Get("_isMovementLocked").AsBool();
+		bool isAttacking = enemyBody.IsAttacking();
+		
+		// Handle movement input - only when not attacking and movement not locked
+		if (!isAttacking && !isDashing && !isMovementLocked)
+		{
+			float direction = Input.GetAxis("move_left", "move_right");
+			float speed = enemyBody.Get("Speed").AsSingle() is float s ? s : Speed;
+			velocity.X = Mathf.MoveToward(velocity.X, direction * speed, speed);
+			
+			// Update facing direction and attack areas
+			if (direction != 0)
+			{
+				bool newFacingRight = direction > 0;
+				if (newFacingRight != facingRight)
+				{
+					facingRight = newFacingRight;
+					var sprite = body.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+					if (sprite != null)
+					{
+						sprite.FlipH = !facingRight;
+					}
+					
+					// Update attack area facing with enhanced method
+					if (enemyBody.HasMethod("UpdateFacing"))
+						enemyBody.Call("UpdateFacing", direction);
+					if (enemyBody.HasMethod("UpdateNormalAttackAreaFacing"))
+						enemyBody.Call("UpdateNormalAttackAreaFacing");
+					if (enemyBody.HasMethod("UpdateSpecialAttackAreaFacing"))
+						enemyBody.Call("UpdateSpecialAttackAreaFacing");
+				}
+			}
+		}
+		else if (isMovementLocked)
+		{
+			// Gradually slow down horizontal movement when locked
+			velocity.X = Mathf.MoveToward(velocity.X, 0, 500 * deltaF);
+		}
+		
+		// Handle jump input - only when not attacking and movement not locked
+		if (Input.IsActionJustPressed("move_up") && body.IsOnFloor() && !isAttacking && !isMovementLocked)
+		{
+			float jumpVel = enemyBody.Get("JumpVelocity").AsSingle() is float j ? j : JumpVelocity;
+			velocity.Y = jumpVel;
+		}
+		
+		// Apply velocity and move
+		body.Velocity = velocity;
+		body.MoveAndSlide();
+		
+		// Update animation for possessed enemy
+		var animSprite = body.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+		if (animSprite != null)
+		{
+			string anim = GetEnemyCurrentAnimation(body.IsOnFloor(), velocity, enemyBody.CurrentState);
+			if (animSprite.Animation != anim && !isAttacking)
+			{
+				animSprite.Play(anim);
+			}
+		}
+	}
+
+	private string GetEnemyCurrentAnimation(bool onFloor, Vector2 velocity, BaseEnemy.EnemyState currentState)
 	{
 		if (isDashing) return "dash";
+		
+		// Check if enemy is in an attack state
+		if (currentState == BaseEnemy.EnemyState.NormalAttack || 
+			currentState == BaseEnemy.EnemyState.SpecialAttack)
+		{
+			return "attack"; // Use appropriate animation name
+		}
+		
 		if (onFloor) return Mathf.Abs(velocity.X) > 50 ? "run" : "idle";
-		if (isWallSliding) return "slidewall";
 		if (velocity.Y < -50) return "jump";
 		return "fall";
+	}
+	
+	private void HandlePossessedAttack(bool isSpecialAttack)
+	{
+		if (possessedEnemy == null) 
+		{
+			GD.Print("No possessed enemy to attack with");
+			return;
+		}
+		
+		if (!possessedEnemy.CanAttack()) 
+		{
+			GD.Print($"Possessed enemy {possessedEnemy.Name} cannot attack right now - CanAttack: {possessedEnemy.CanAttack()}, IsAttacking: {possessedEnemy.IsAttacking()}");
+			return;
+		}
+		
+		GD.Print($"Attempting {(isSpecialAttack ? "special" : "normal")} attack with {possessedEnemy.Name}");
+
+		// Update facing direction based on current input or maintain current facing
+		float direction = Input.GetAxis("move_left", "move_right");
+		if (direction != 0)
+		{
+			facingRight = direction > 0;
+			if (possessedEnemy.HasMethod("UpdateFacing"))
+			{
+				possessedEnemy.Call("UpdateFacing", direction);
+			}
+			else
+			{
+				// Fallback: update sprite directly
+				var sprite = possessedEnemy.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
+				if (sprite != null)
+				{
+					sprite.FlipH = !facingRight;
+				}
+			}
+		}
+		
+		// Call the appropriate player attack method directly
+		if (isSpecialAttack)
+		{
+			GD.Print("Calling PerformPlayerSpecialAttack");
+			possessedEnemy.PerformPlayerSpecialAttack();
+		}
+		else
+		{
+			GD.Print("Calling PerformPlayerNormalAttack");  
+			possessedEnemy.PerformPlayerNormalAttack();
+		}
+	}
+
+	#endregion
+
+	#region Monster Collection and Summoning
+
+	private void CollectMonster(Node2D monster)
+	{
+		for (int i = 0; i < MonsterScenes.Length; i++)
+		{
+			if (MonsterScenes[i] == null)
+			{
+				PackedScene monsterScene = ResourceLoader.Load<PackedScene>(monster.SceneFilePath);
+				MonsterScenes[i] = monsterScene;
+				SummonCosts[i] = CalculateSummonCost(monster);
+				
+				GD.Print($"Collected {monster.Name} in slot {i}");
+				return;
+			}
+		}
+		
+		GD.Print("Inventory full, cannot collect more monsters!");
+	}
+	
+	private int CalculateSummonCost(Node2D monster)
+	{
+		int maxHp = GetMonsterMaxHealth(monster);
+		int baseCost = maxHp / 5;
+		
+		if (monster.HasMethod("GetDamage"))
+		{
+			int damage = (int)monster.Call("GetDamage");
+			baseCost += damage / 2;
+		}
+		
+		return Mathf.Clamp(baseCost, 10, 100);
 	}
 
 	public void SummonMonster(int slot)
@@ -393,166 +767,46 @@ public partial class Player : CharacterBody2D
 		summonedMonster = monster;
 		CurSoulSP -= SummonCosts[slot];
 		
-		// QUAN TRỌNG: Đặt quái ở trạng thái controlled để không tự di chuyển
+		// Set up summoned monster
 		if (monster.HasMethod("SetIsControlledByPlayer"))
 		{
 			monster.Call("SetIsControlledByPlayer", true);
 		}
 		
-		// THÊM: Đặt collision layer/mask đặc biệt cho quái triệu hồi
+		// Set collision and groups for summoned monster
 		if (monster is CharacterBody2D body)
 		{
-			body.CollisionLayer = 1u << 5;  // Layer riêng cho quái triệu hồi
-			body.CollisionMask = (1u << 1) | (1u << 2); // Chỉ va chạm với Enemy và World
+			body.CollisionLayer = 1u << 5;
+			body.CollisionMask = (1u << 1) | (1u << 2);
 		}
 		
-		// THÊM: Cho vào group Allies thay vì Enemies
 		if (monster.IsInGroup("Enemies"))
 		{
 			monster.RemoveFromGroup("Enemies");
 		}
 		monster.AddToGroup("Allies");
-		
-		// QUAN TRỌNG: Thêm vào group SummonedMonsters để phân biệt
 		monster.AddToGroup("SummonedMonsters");
 		
-		GD.Print($"Summoned {monster.Name} - Controlled state set, added to Allies group");
+		GD.Print($"Summoned {monster.Name} - Set to controlled state and added to Allies group");
 	}
-	
-	private void UpdateSpecialAbilities(float delta)
+
+	public void OnMonsterDeath(Node2D deadMonster)
 	{
-		if (isStealth)
+		if (summonedMonster == deadMonster)
 		{
-			stealthTimer -= delta;
-			if (stealthTimer <= 0)
+			if (isPossessing && possessedEnemy == deadMonster)
 			{
-				EndStealth();
+				// Force release from dead summoned monster
+				ReleaseTarget();
 			}
-		}
-		
-		if (stealthCooldownTimer > 0) stealthCooldownTimer -= delta;
-		if (blockCooldownTimer > 0) blockCooldownTimer -= delta;
-		
-		if (isBlocking)
-		{
-			blockTimer -= delta;
-			if (blockTimer <= 0)
-			{
-				EndBlock();
-			}
+			summonedMonster = null;
+			GD.Print("Summoned monster died");
 		}
 	}
 
-	private Node2D FindNearestPossessTarget()
-	{
-		Node2D nearest = null;
-		float nearestDistance = 320.0f;
-		
-		GD.Print("Bắt đầu tìm target để nhập xác...");
-		
-		// Check summoned monster first
-		if (summonedMonster != null && !summonedMonster.IsQueuedForDeletion())
-		{
-			float distance = Position.DistanceTo(summonedMonster.Position);
-			GD.Print($"Summoned monster: {summonedMonster.Name}, distance: {distance}");
-			if (distance < nearestDistance)
-			{
-				nearestDistance = distance;
-				nearest = summonedMonster;
-				GD.Print($"Chọn summoned monster: {nearest.Name}");
-			}
-		}
+	#endregion
 
-		// Check ALL enemies
-		foreach (Node2D enemy in GetTree().GetNodesInGroup("Enemies"))
-		{
-			if (enemy.IsQueuedForDeletion()) continue;
-			
-			float distance = Position.DistanceTo(enemy.Position);
-			bool canPossess = CanPossessEnemy(enemy);
-			
-			GD.Print($"Enemy: {enemy.Name}, distance: {distance}, canPossess: {canPossess}");
-			
-			if (canPossess && distance < nearestDistance)
-			{
-				nearestDistance = distance;
-				nearest = enemy;
-				GD.Print($"Chọn enemy: {nearest.Name}");
-			}
-		}
-
-		if (nearest == null)
-		{
-			GD.Print("Không tìm thấy target nào trong phạm vi!");
-		}
-		else
-		{
-			GD.Print($"Target được chọn: {nearest.Name}, distance: {nearestDistance}");
-		}
-		
-		return nearest;
-	}
-	
-	private bool CanPossessEnemy(Node2D enemy)
-	{
-		//test
-		//return true;
-		
-		// Luôn cho phép nhập xác quái triệu hồi
-		if (enemy == summonedMonster) return true;
-		
-		// Cho phép nhập xác quái đã chết
-		int currentHp = GetMonsterHealth(enemy);
-		if (currentHp <= 0) return true;
-		
-		// Kiểm tra ngưỡng possession
-		if (enemy.HasMethod("GetPossessThresholdF"))
-		{
-			float threshold = (float)enemy.Call("GetPossessThresholdF");
-			int maxHp = GetMonsterMaxHealth(enemy);
-			float healthRatio = (float)currentHp / maxHp;
-			
-			return healthRatio <= threshold;
-		}
-		
-		return false;
-	}
-	
-	private void CollectMonster(Node2D monster)
-	{
-		for (int i = 0; i < MonsterScenes.Length; i++)
-		{
-			if (MonsterScenes[i] == null)
-			{
-				// Lấy scene từ monster
-				PackedScene monsterScene = ResourceLoader.Load<PackedScene>(monster.SceneFilePath);
-				MonsterScenes[i] = monsterScene;
-				
-				// Thiết lập chi phí triệu hồi (có thể dựa trên sức mạnh của quái)
-				SummonCosts[i] = CalculateSummonCost(monster);
-				
-				GD.Print($"Đã thu thập {monster.Name} vào slot {i}");
-				return;
-			}
-		}
-		
-		GD.Print("Kho đồ đã đầy, không thể thu thập thêm!");
-	}
-	
-	private int CalculateSummonCost(Node2D monster)
-	{
-		int maxHp = GetMonsterMaxHealth(monster);
-		int baseCost = maxHp / 5; // Chi phí cơ bản dựa trên máu
-		
-		// Có thể thêm các yếu tố khác như sát thương, phòng thủ, v.v.
-		if (monster.HasMethod("GetDamage"))
-		{
-			int damage = (int)monster.Call("GetDamage");
-			baseCost += damage / 2;
-		}
-		
-		return Mathf.Clamp(baseCost, 10, 100);
-	}
+	#region Utility Methods (unchanged from original)
 
 	private int GetMonsterMaxHealth(Node2D monster)
 	{
@@ -574,172 +828,36 @@ public partial class Player : CharacterBody2D
 			monster.Call("SetHP", hp);
 	}
 
-	private void PossessTarget(Node2D target)
+	private string GetCurrentAnimation(bool onFloor, Vector2 velocity)
 	{
-		if (target == null) return;
-
-		if (!target.HasMethod("CanBePossessed") || !(bool)target.Call("CanBePossessed"))
-		{
-			GD.Print($"{target.Name} cannot be possessed right now!");
-			return;
-		}
-
-		// CẬP NHẬT QUAN TRỌNG: Thiết lập hướng của enemy theo hướng của player
-		if (target.HasMethod("UpdateFacing"))
-		{
-			float direction = facingRight ? 1f : -1f;
-			target.Call("UpdateFacing", direction);
-		}
-		else
-		{
-			// Fallback: Cập nhật trực tiếp nếu enemy không có method UpdateFacing
-			var sprite = target.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
-			if (sprite != null)
-			{
-				sprite.FlipH = !facingRight;
-			}
-		}
-
-		int hostMaxHp = GetMonsterMaxHealth(target);
-		float playerRatio = (float)CurSoulHP / MaxSoulHP;
-		int hostHp = Mathf.CeilToInt(hostMaxHp * playerRatio);
-		SetMonsterHealth(target, hostHp);
-
-		possessedEnemy = target;
-		isPossessing = true;
-		_currentBody = target;
-
-		// Chuyển đổi collision và group
-		if (target is CharacterBody2D targetBody)
-		{
-			// Lưu lại collision layer/mask gốc của quái
-			if (target.HasMethod("GetOriginalCollisionLayer"))
-				target.Call("SetOriginalCollisionLayer", targetBody.CollisionLayer, targetBody.CollisionMask);
-			
-			// Thiết lập collision layer/mask của player cho quái
-			targetBody.CollisionLayer = originalCollisionLayer;
-			targetBody.CollisionMask = originalCollisionMask;
-		}
-
-		// Chuyển group từ enemy sang player
-		if (target.IsInGroup("Enemies"))
-		{
-			target.RemoveFromGroup("Enemies");
-			target.AddToGroup("Player");
-		}
-
-		// Tắt AI và bật điều khiển bởi người chơi
-		if (target.HasMethod("SetIsControlledByPlayer"))
-			target.Call("SetIsControlledByPlayer", true);
-
-		// Ẩn player và tắt collision
-		Visible = false;
-		if (playerCollision != null) playerCollision.Disabled = true;
-
-		GD.Print($"👹 Nhập xác {target.Name}: {hostHp}/{hostMaxHp} HP (theo {playerRatio:P0} máu Player)");
+		if (isDashing) return "dash";
+		if (onFloor) return Mathf.Abs(velocity.X) > 50 ? "run" : "idle";
+		if (isWallSliding) return "slidewall";
+		if (velocity.Y < -50) return "jump";
+		return "fall";
 	}
 
-	private void ReleaseTarget()
+	private void UpdateSpecialAbilities(float delta)
 	{
-		if (!isPossessing || possessedEnemy == null) return;
-
-		// 1. LẤY THÔNG TIN MÁU TRƯỚC KHI RESET
-		int hostMaxHp = GetMonsterMaxHealth(possessedEnemy);
-		int hostHp = GetMonsterHealth(possessedEnemy);
-		float hostRatio = (float)hostHp / hostMaxHp;
-		CurSoulHP = Mathf.Max(1, (int)(MaxSoulHP * hostRatio));
-
-		// 2. KHÔI PHỤC COLLISION VÀ GROUP CỦA QUÁI
-		if (possessedEnemy is CharacterBody2D targetBody)
+		if (isStealth)
 		{
-			// QUAN TRỌNG: Nếu là quái TRIỆU HỒI, giữ nguyên collision layer/mask
-			if (possessedEnemy != summonedMonster)
+			stealthTimer -= delta;
+			if (stealthTimer <= 0)
 			{
-				if (possessedEnemy.HasMethod("GetOriginalCollisionLayer"))
-				{
-					var originalLayer = (uint)possessedEnemy.Call("GetOriginalCollisionLayer");
-					var originalMask = (uint)possessedEnemy.Call("GetOriginalCollisionMask");
-					targetBody.CollisionLayer = originalLayer;
-					targetBody.CollisionMask = originalMask;
-				}
-				else
-				{
-					// Mặc định nếu không có thông tin gốc
-					targetBody.CollisionLayer = 1u << 1; // Enemy layer
-					targetBody.CollisionMask = (1u << 0) | (1u << 2); // Player và World
-				}
+				EndStealth();
 			}
 		}
-
-		// 3. KHÔI PHỤC GROUP - QUAN TRỌNG: Nếu là quái TRIỆU HỒI, KHÔNG cho lại vào group Enemies
-		if (possessedEnemy.IsInGroup("Player"))
-		{
-			possessedEnemy.RemoveFromGroup("Player");
-			
-			// CHỈ thêm vào group Enemies nếu KHÔNG phải quái triệu hồi
-			if (possessedEnemy != summonedMonster)
-			{
-				possessedEnemy.AddToGroup("Enemies");
-			}
-		}
-
-		// 4. TẮT ĐIỀU KHIỂN BỞI NGƯỜI CHƠI
-		if (possessedEnemy.HasMethod("SetIsControlledByPlayer"))
-			possessedEnemy.Call("SetIsControlledByPlayer", false);
-
-		// 5. Thu thập xác nếu nó chết VÀ KHÔNG phải quái triệu hồi
-		if (hostHp <= 0 && possessedEnemy != summonedMonster)
-		{
-			CollectMonster(possessedEnemy);
-		}
-
-		// 6. KHÔI PHỤC PLAYER
-		isPossessing = false;
-		_currentBody = this;
-
-		if (playerCollision != null) playerCollision.Disabled = false;
-		Visible = true;
-		SetPhysicsProcess(true);
-		SetProcessInput(true);
-
-		// 7. ĐẶT LẠI VỊ TRÍ PLAYER
-		Position = possessedEnemy.Position + new Vector2(0, -20);
 		
-		// 8. RESET TRẠNG THÁI TẤN CÔNG CỦA ENEMY - QUAN TRỌNG!
-		if (possessedEnemy.HasMethod("ResetAttackState"))
+		if (stealthCooldownTimer > 0) stealthCooldownTimer -= delta;
+		if (blockCooldownTimer > 0) blockCooldownTimer -= delta;
+		
+		if (isBlocking)
 		{
-			possessedEnemy.Call("ResetAttackState");
-		}
-
-		var tempEnemy = possessedEnemy;
-		possessedEnemy = null;
-
-		GD.Print($"👻 Thoát xác: Player còn {CurSoulHP}/{MaxSoulHP} HP (theo {hostRatio} máu Xác)");
-
-		// 9. NẾU LÀ QUÁI TRIỆU HỒI, SET LẠI TRẠNG THÁI CONTROLLED
-		if (tempEnemy == summonedMonster && tempEnemy.HasMethod("SetIsControlledByPlayer"))
-		{
-			tempEnemy.Call("SetIsControlledByPlayer", true);
-			GD.Print("Quái triệu hồi trở lại trạng thái controlled");
-		}
-	}
-
-	public void OnMonsterDeath(Node2D deadMonster)
-	{
-		if (summonedMonster == deadMonster)
-		{
-			if (isPossessing)
+			blockTimer -= delta;
+			if (blockTimer <= 0)
 			{
-				isPossessing = false;
-				_currentBody = this;
-				if (playerCollision != null) playerCollision.Disabled = false;
-				Visible = true;
-				SetPhysicsProcess(true);
-				SetProcessInput(true);
-				Position = deadMonster.Position + new Vector2(0, -20);
-				GD.Print("Xác chết: Người chơi thoát xác, giữ máu hiện tại");
+				EndBlock();
 			}
-			summonedMonster = null;
 		}
 	}
 
@@ -775,8 +893,6 @@ public partial class Player : CharacterBody2D
 		{
 			Velocity = new Vector2(direction * DashSpeed, 0);
 		}
-
-		GD.Print("Dash started");
 	}
 
 	private void EndDash()
@@ -795,7 +911,6 @@ public partial class Player : CharacterBody2D
 			Velocity = new Vector2(0, Velocity.Y);
 			MoveAndSlide();
 		}
-		GD.Print("Dash ended");
 	}
 
 	private void UseHealthPotion()
@@ -824,25 +939,25 @@ public partial class Player : CharacterBody2D
 
 		if (isPossessing && possessedEnemy != null)
 		{
-			int hostMaxHp = GetMonsterMaxHealth(possessedEnemy);
-			int hostHp = GetMonsterHealth(possessedEnemy);
+			int hostMaxHp = possessedEnemy.GetMaxHP();
+			int hostHp = possessedEnemy.GetHP();
 			hostHp = Mathf.Max(0, hostHp - damage);
-			SetMonsterHealth(possessedEnemy, hostHp);
+			possessedEnemy.SetHP(hostHp);
 
 			float hostRatio = (float)hostHp / hostMaxHp;
 			CurSoulHP = (int)(MaxSoulHP * hostRatio);
 
 			if (CurSoulHP <= 0)
 			{
-				SetMonsterHealth(possessedEnemy, 0);
+				possessedEnemy.SetHP(0);
 				ReleaseTarget();
 				CurSoulHP = 1;
-				GD.Print("⚔️ Chí tử: Xác hy sinh, Player thoát xác với 1 HP!");
+				GD.Print("Critical hit: Possessed body sacrificed, Player escaped with 1 HP!");
 			}
 			else if (hostHp <= 0)
 			{
 				ReleaseTarget();
-				GD.Print("☠️ Xác chết trước, Player thoát xác.");
+				GD.Print("Possessed body died, Player escaped.");
 			}
 		}
 		else
@@ -850,7 +965,7 @@ public partial class Player : CharacterBody2D
 			CurSoulHP = Mathf.Max(0, CurSoulHP - damage);
 			if (CurSoulHP <= 0)
 			{
-				GD.Print("💀 Người chơi chết!");
+				GD.Print("Player died!");
 				QueueFree();
 			}
 		}
@@ -868,14 +983,11 @@ public partial class Player : CharacterBody2D
 		stealthCooldownTimer = StealthCooldown;
 		CurSoulMP -= 30;
 		
-		// Làm mờ nhân vật
 		Modulate = new Color(1, 1, 1, 0.5f);
-		
-		// Ẩn khỏi enemy detection
 		RemoveFromGroup("Player");
 		AddToGroup("StealthPlayer");
 		
-		GD.Print("Tàng hình kích hoạt!");
+		GD.Print("Stealth activated!");
 	}
 
 	private void EndStealth()
@@ -883,11 +995,10 @@ public partial class Player : CharacterBody2D
 		isStealth = false;
 		Modulate = new Color(1, 1, 1, 1);
 		
-		// Hiện lại với enemy
 		RemoveFromGroup("StealthPlayer");
 		AddToGroup("Player");
 		
-		GD.Print("Tàng hình kết thúc!");
+		GD.Print("Stealth ended!");
 	}
 
 	private void ActivateBlock()
@@ -897,14 +1008,13 @@ public partial class Player : CharacterBody2D
 		blockCooldownTimer = BlockCooldown;
 		CurSoulMP -= 20;
 		
-		// Giảm sát thương nhận vào
-		GD.Print("Đỡ đòn kích hoạt!");
+		GD.Print("Block activated!");
 	}
 
 	private void EndBlock()
 	{
 		isBlocking = false;
-		GD.Print("Đỡ đòn kết thúc!");
+		GD.Print("Block ended!");
 	}
 
 	private void PerformDoubleJump()
@@ -912,7 +1022,7 @@ public partial class Player : CharacterBody2D
 		float jumpVel = _currentBody.Get("JumpVelocity").AsSingle() is float j ? j : JumpVelocity;
 		Velocity = new Vector2(Velocity.X, jumpVel * 0.8f);
 		currentJumps--;
-		GD.Print($"Double jump! Còn {currentJumps}/{MaxJumps} lần nhảy");
+		GD.Print($"Double jump! {currentJumps}/{MaxJumps} jumps remaining");
 	}
 
 	private void PerformAirDash()
@@ -923,10 +1033,11 @@ public partial class Player : CharacterBody2D
 			CurSoulMP = Mathf.Max(0, CurSoulMP - 15);
 			currentDashes--;
 			StartDash(dashDirection);
-			GD.Print($"Dash trên không! Còn {currentDashes}/{MaxDashes} lần dash");
+			GD.Print($"Air dash! {currentDashes}/{MaxDashes} dashes remaining");
 		}
 	}
 	
+	// Public API methods
 	public bool IsPossessing() => isPossessing;
 	public bool HasSummonedMonster() => summonedMonster != null;
 	public int GetSelectedMonsterSlot() => selectedMonsterSlot;
@@ -939,139 +1050,6 @@ public partial class Player : CharacterBody2D
 			return UnlockedSlots[slotIndex] == 1;
 		}
 		return false;
-	}
-	
-	private void ProcessPossessedEnemyPhysics(CharacterBody2D enemyBody, double delta)
-	{
-		// CHỈ xử lý nếu đang nhập xác
-		if (!isPossessing) return;
-		
-		float deltaF = (float)delta;
-		Vector2 velocity = enemyBody.Velocity;
-		
-		// Áp dụng trọng lực
-		if (!enemyBody.IsOnFloor())
-			velocity.Y += Gravity * deltaF;
-		
-		// Xử lý di chuyển theo input - CHỈ KHI KHÔNG TẤN CÔNG
-		bool isAttacking = false;
-		if (enemyBody.HasMethod("IsAttacking"))
-			isAttacking = (bool)enemyBody.Call("IsAttacking");
-		
-		if (!isAttacking && !isDashing)
-		{
-			float direction = Input.GetAxis("move_left", "move_right");
-			float speed = enemyBody.Get("Speed").AsSingle() is float s ? s : Speed;
-			velocity.X = Mathf.MoveToward(velocity.X, direction * speed, speed);
-			
-			// Cập nhật hướng nhìn
-			if (direction != 0)
-			{
-				bool newFacingRight = direction > 0;
-				if (newFacingRight != facingRight)
-				{
-					facingRight = newFacingRight;
-					var sprite = enemyBody.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
-					if (sprite != null)
-					{
-						sprite.FlipH = !facingRight;
-					}
-					
-					// Cập nhật hướng attack area
-					if (enemyBody.HasMethod("UpdateAttackAreaFacing"))
-					{
-						enemyBody.Call("UpdateAttackAreaFacing");
-					}
-				}
-			}
-		}
-		
-		// Xử lý nhảy
-		if (Input.IsActionJustPressed("move_up") && enemyBody.IsOnFloor() && !isAttacking)
-		{
-			float jumpVel = enemyBody.Get("JumpVelocity").AsSingle() is float j ? j : JumpVelocity;
-			velocity.Y = jumpVel;
-		}
-		
-		// Cập nhật velocity và di chuyển
-		enemyBody.Velocity = velocity;
-		enemyBody.MoveAndSlide();
-		
-		// Cập nhật animation
-		var animSprite = enemyBody.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
-		if (animSprite != null && !isAttacking)
-		{
-			string anim = GetEnemyCurrentAnimation(enemyBody.IsOnFloor(), velocity);
-			if (animSprite.Animation != anim)
-			{
-				animSprite.Play(anim);
-			}
-		}
-	}
-
-	private string GetEnemyCurrentAnimation(bool onFloor, Vector2 velocity)
-	{
-		if (isDashing) return "dash";
-		
-		// QUAN TRỌNG: Ưu tiên animation attack
-		var animSprite = _currentBody.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
-		if (animSprite != null)
-		{
-			string currentAnim = animSprite.Animation.ToString();
-			if (currentAnim.Contains("attack") || currentAnim.Contains("heavy") || currentAnim.Contains("normal"))
-			{
-				return currentAnim;
-			}
-		}
-		
-		if (onFloor) return Mathf.Abs(velocity.X) > 50 ? "run" : "idle";
-		if (velocity.Y < -50) return "jump";
-		return "fall";
-	}
-	
-	private void HandlePossessedAttack(bool isSpecialAttack)
-	{
-		// Kiểm tra nếu enemy có thể tấn công
-		bool canAttack = true;
-		if (_currentBody.HasMethod("CanAttack"))
-		{
-			canAttack = (bool)_currentBody.Call("CanAttack");
-			GD.Print($"Can attack: {canAttack}");
-		}
-		
-		if (canAttack)
-		{
-			GD.Print($"Attempting {(isSpecialAttack ? "special" : "normal")} attack with {_currentBody.Name}");
-		
-			// Đảm bảo cập nhật hướng nhìn trước khi tấn công
-			float direction = Input.GetAxis("move_left", "move_right");
-			if (direction != 0)
-			{
-				facingRight = direction > 0;
-				if (_currentBody.HasMethod("UpdateFacing"))
-				{
-					_currentBody.Call("UpdateFacing", direction);
-				}
-				
-				// Cập nhật hướng attack area
-				if (_currentBody.HasMethod("UpdateAttackAreaFacing"))
-				{
-					_currentBody.Call("UpdateAttackAreaFacing");
-				}
-			}
-			
-			// GỌI PHƯƠNG THỨC ATTACK PHÙ HỢP
-			string attackMethod = isSpecialAttack ? "PerformSpecialAttack" : "PerformNormalAttack";
-			if (_currentBody.HasMethod(attackMethod))
-			{
-				_currentBody.Call(attackMethod);
-				GD.Print($"{attackMethod} called on {_currentBody.Name}");
-			}
-			else
-			{
-				GD.Print($"No attack method found in {_currentBody.Name}");
-			}
-		}
 	}
 
 	private void Log(string message)
@@ -1087,7 +1065,9 @@ public partial class Player : CharacterBody2D
 		}
 		catch (Exception e)
 		{
-			GD.PrintErr($"Không thể ghi vào file log: {e.Message}");
+			GD.PrintErr($"Cannot write to log file: {e.Message}");
 		}
 	}
+
+	#endregion
 }

@@ -54,6 +54,8 @@ public partial class LightArcherEnemy : BaseEnemy
 		}
 	}
 
+	#region AI Attack Methods
+
 	protected override void ProcessNormalAttackState()
 	{
 		base.ProcessNormalAttackState();
@@ -142,16 +144,6 @@ public partial class LightArcherEnemy : BaseEnemy
 		EnableSpecialAttackDamage();
 	}
 
-	private void PlayBowReleaseSound()
-	{
-		if (_bowReleasePlayer != null && BowReleaseSound != null)
-		{
-			float randomPitch = 1.0f + (GD.Randf() - 0.5f) * PitchVariation;
-			_bowReleasePlayer.PitchScale = randomPitch;
-			_bowReleasePlayer.Play();
-		}
-	}
-
 	private void EnableNormalAttackDamage()
 	{
 		if (_damageDealt || _normalAttackArea == null) return;
@@ -179,6 +171,118 @@ public partial class LightArcherEnemy : BaseEnemy
 				_damageDealt = false; // Reset for next shot in sequence
 			}
 		};
+	}
+
+	#endregion
+
+	#region Player Control Attack Overrides - NEW
+
+	protected override void StartPlayerNormalAttackSequence()
+	{
+		_isMovementLocked = true; // Lock movement
+		
+		PlayAnimation("normal_attack");
+		UpdateNormalAttackAreaFacing();
+		
+		GD.Print("Starting archer player normal attack - movement locked");
+		
+		// Archer has longer wind-up for normal attack
+		var damageTimer = GetTree().CreateTimer(1.2f);
+		damageTimer.Timeout += () => {
+			if (_isAttacking && _normalAttackArea != null)
+			{
+				PlayBowReleaseSound();
+				_normalAttackArea.SetDeferred("monitoring", true);
+				
+				var disableTimer = GetTree().CreateTimer(0.15f);
+				disableTimer.Timeout += () => {
+					if (_normalAttackArea != null)
+						_normalAttackArea.SetDeferred("monitoring", false);
+				};
+			}
+		};
+		
+		var endTimer = GetTree().CreateTimer(1.4f);
+		endTimer.Timeout += () => {
+			_isMovementLocked = false; // Unlock movement
+			EndPlayerAttack();
+		};
+	}
+
+	protected override void StartPlayerSpecialAttackSequence()
+	{
+		PlayAnimation("special_attack");
+		UpdateSpecialAttackAreaFacing();
+		_currentSpecialHit = 0;
+		_specialAttackCharging = true;
+		
+		GD.Print("=== ARCHER PLAYER SPECIAL ATTACK: 2s Charge + 3 Shots ===");
+		
+		// 2 second charge time
+		var chargeTimer = GetTree().CreateTimer(SPECIAL_CHARGE_TIME);
+		chargeTimer.Timeout += () => ExecutePlayerSpecialSequence();
+	}
+
+	private void ExecutePlayerSpecialSequence()
+	{
+		if (_currentState != EnemyState.SpecialAttack) return;
+		
+		_specialAttackCharging = false;
+		GD.Print("Player special attack sequence started");
+		
+		// Keep movement locked during entire sequence
+		_isMovementLocked = true;
+		
+		// Execute 3 shots with intervals
+		for (int i = 0; i < MAX_SPECIAL_HITS; i++)
+		{
+			var hitTimer = GetTree().CreateTimer(i * SPECIAL_HIT_INTERVAL);
+			hitTimer.Timeout += () => ExecutePlayerSpecialHit();
+		}
+		
+		// End attack after all hits and unlock movement
+		var endTimer = GetTree().CreateTimer((MAX_SPECIAL_HITS - 1) * SPECIAL_HIT_INTERVAL + 0.5f);
+		endTimer.Timeout += () => {
+			_isMovementLocked = false; // Unlock movement
+			EndPlayerAttack();
+		};
+	}
+
+	private void ExecutePlayerSpecialHit()
+	{
+		if (_currentState != EnemyState.SpecialAttack) return;
+		
+		_currentSpecialHit++;
+		_damageDealt = false;
+		
+		GD.Print($"Player special shot {_currentSpecialHit}/{MAX_SPECIAL_HITS}");
+		PlayBowReleaseSound();
+		
+		if (_specialAttackArea != null)
+		{
+			_specialAttackArea.SetDeferred("monitoring", true);
+			
+			var disableTimer = GetTree().CreateTimer(DAMAGE_WINDOW);
+			disableTimer.Timeout += () => {
+				if (_specialAttackArea != null)
+				{
+					_specialAttackArea.SetDeferred("monitoring", false);
+					_damageDealt = false; // Reset for next shot
+				}
+			};
+		}
+	}
+
+	#endregion
+
+	private void PlayBowReleaseSound()
+	{
+		if (_bowReleasePlayer != null && BowReleaseSound != null)
+		{
+			float randomPitch = 1.0f + (GD.Randf() - 0.5f) * PitchVariation;
+			_bowReleasePlayer.PitchScale = randomPitch;
+			_bowReleasePlayer.Play();
+		}
 	}
 
 	protected override float GetCurrentAttackRange()

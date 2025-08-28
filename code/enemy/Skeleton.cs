@@ -30,6 +30,8 @@ public partial class Skeleton : BaseEnemy
 		AddChild(_attackAudio);
 	}
 
+	#region AI Attack Methods
+
 	protected override void ProcessNormalAttackState()
 	{
 		base.ProcessNormalAttackState();
@@ -79,6 +81,54 @@ public partial class Skeleton : BaseEnemy
 	{
 		EndAttack(); // Call base method
 	}
+
+	#endregion
+
+	#region Player Control Attack Overrides - NEW
+
+	protected override void StartPlayerNormalAttackSequence()
+	{
+		_isMovementLocked = true; // Lock movement
+		
+		PlayAnimation("attack");
+		UpdateNormalAttackAreaFacing();
+		
+		GD.Print("Starting skeleton player normal attack - movement locked");
+		
+		// Enable damage after 0.3s
+		var damageTimer = GetTree().CreateTimer(0.3f);
+		damageTimer.Timeout += () => {
+			if (_isAttacking && _normalAttackArea != null)
+			{
+				_normalAttackArea.SetDeferred("monitoring", true);
+				
+				if (_attackAudio != null && _attackAudio.Stream != null)
+					_attackAudio.Play();
+				
+				// Disable after damage window
+				var disableTimer = GetTree().CreateTimer(0.2f);
+				disableTimer.Timeout += () => {
+					if (_normalAttackArea != null)
+						_normalAttackArea.SetDeferred("monitoring", false);
+				};
+			}
+		};
+		
+		// End attack after 1.0s and unlock movement
+		var endTimer = GetTree().CreateTimer(1.0f);
+		endTimer.Timeout += () => {
+			_isMovementLocked = false;
+			EndPlayerAttack();
+		};
+	}
+
+	protected override void StartPlayerSpecialAttackSequence()
+	{
+		// Skeleton uses normal attack for both normal and special
+		StartPlayerNormalAttackSequence();
+	}
+
+	#endregion
 
 	protected override void OnAnimationFinished()
 	{

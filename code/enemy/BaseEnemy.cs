@@ -49,6 +49,7 @@ public partial class BaseEnemy : CharacterBody2D
 	protected float _stunDuration = 0.0f;
 	protected Node2D _target;
 	protected bool _isPlayerControlled = false;
+	protected bool _isMovementLocked = false;
 
 	// Attack state tracking
 	protected bool _isAttacking = false;
@@ -390,12 +391,164 @@ public partial class BaseEnemy : CharacterBody2D
 	public virtual void PerformSpecialAttack()
 	{
 		if (!CanPerformAttack()) return;
-		
+		//_isPlayerControlled
 		FindTarget();
 		if (_target != null && GlobalPosition.DistanceTo(_target.GlobalPosition) <= SpecialAttackRange)
 		{
 			StartAttack(EnemyState.SpecialAttack);
 		}
+	}
+
+	#endregion
+
+	#region Player Control Attack System - FIXED
+
+	public virtual void PerformPlayerNormalAttack()
+	{
+		GD.Print($"PerformPlayerNormalAttack called - CanAttack: {CanAttack()}, Attacking: {_isAttacking}");
+		
+		if (!CanAttack()) 
+		{
+			GD.Print("Cannot attack: conditions not met");
+			return;
+		}
+		
+		_canAttack = false;
+		_isAttacking = true;
+		_isAttackingUninterruptible = true;
+		_damageDealt = false;
+		_attackCooldown = AttackCooldownDuration;
+		
+		// Transition to attack state
+		TransitionToState(EnemyState.NormalAttack);
+		
+		// Start the attack animation and damage sequence
+		StartPlayerNormalAttackSequence();
+	}
+
+	public virtual void PerformPlayerSpecialAttack()
+	{
+		GD.Print($"PerformPlayerSpecialAttack called - CanAttack: {CanAttack()}, Attacking: {_isAttacking}");
+		
+		if (!CanAttack()) 
+		{
+			GD.Print("Cannot perform special attack: conditions not met");
+			return;
+		}
+		
+		_canAttack = false;
+		_isAttacking = true;
+		_isAttackingUninterruptible = true;
+		_damageDealt = false;
+		_attackCooldown = SpecialAttackCooldownDuration;
+		
+		// Transition to special attack state
+		TransitionToState(EnemyState.SpecialAttack);
+		
+		// Start the special attack animation and damage sequence
+		StartPlayerSpecialAttackSequence();
+	}
+
+	protected virtual void StartPlayerNormalAttackSequence()
+	{
+		// Lock movement during attack
+		_isMovementLocked = true;
+		
+		PlayAnimation("normal_attack");
+		UpdateNormalAttackAreaFacing();
+		
+		GD.Print("Starting player normal attack sequence - movement locked");
+		
+		// Enable damage after a short delay
+		var damageTimer = GetTree().CreateTimer(0.3f);
+		damageTimer.Timeout += () => {
+			if (_isAttacking && _normalAttackArea != null)
+			{
+				_normalAttackArea.SetDeferred("monitoring", true);
+				GD.Print("Normal attack damage enabled");
+				
+				// Disable after damage window
+				var disableTimer = GetTree().CreateTimer(0.2f);
+				disableTimer.Timeout += () => {
+					if (_normalAttackArea != null)
+					{
+						_normalAttackArea.SetDeferred("monitoring", false);
+						GD.Print("Normal attack damage disabled");
+					}
+				};
+			}
+		};
+		
+		// End attack after total duration
+		var endTimer = GetTree().CreateTimer(1.0f);
+		endTimer.Timeout += () => {
+			_isMovementLocked = false; // Unlock movement
+			EndPlayerAttack();
+		};
+	}
+
+	protected virtual void StartPlayerSpecialAttackSequence()
+	{
+		// Lock movement during attack
+		_isMovementLocked = true;
+		
+		PlayAnimation("special_attack");
+		UpdateSpecialAttackAreaFacing();
+		
+		GD.Print("Starting player special attack sequence - movement locked");
+		
+		// Enable damage after a short delay
+		var damageTimer = GetTree().CreateTimer(0.5f);
+		damageTimer.Timeout += () => {
+			if (_isAttacking && _specialAttackArea != null)
+			{
+				_specialAttackArea.SetDeferred("monitoring", true);
+				GD.Print("Special attack damage enabled");
+				
+				// Disable after damage window
+				var disableTimer = GetTree().CreateTimer(0.3f);
+				disableTimer.Timeout += () => {
+					if (_specialAttackArea != null)
+					{
+						_specialAttackArea.SetDeferred("monitoring", false);
+						GD.Print("Special attack damage disabled");
+					}
+				};
+			}
+		};
+		
+		// End attack after total duration
+		var endTimer = GetTree().CreateTimer(1.5f);
+		endTimer.Timeout += () => {
+			_isMovementLocked = false; // Unlock movement
+			EndPlayerAttack();
+		};
+	}
+
+	protected virtual void EndPlayerAttack()
+	{
+		GD.Print("Ending player attack and unlocking movement");
+		
+		_isAttacking = false;
+		_isAttackingUninterruptible = false;
+		_isMovementLocked = false; // Ensure movement is unlocked
+		_damageDealt = false;
+		
+		// Ensure attack areas are disabled
+		if (_normalAttackArea != null)
+			_normalAttackArea.SetDeferred("monitoring", false);
+		if (_specialAttackArea != null)
+			_specialAttackArea.SetDeferred("monitoring", false);
+		
+		// Return to idle state for player control
+		TransitionToState(EnemyState.Idle);
+		
+		// Re-enable attacking after cooldown
+		var cooldownTimer = GetTree().CreateTimer(_attackCooldown);
+		cooldownTimer.Timeout += () => { 
+			_canAttack = true; 
+			GD.Print("Attack cooldown finished - can attack again");
+		};
 	}
 
 	#endregion
@@ -480,7 +633,7 @@ public partial class BaseEnemy : CharacterBody2D
 			   potentialTarget.HasMethod("TakeDamage");
 	}
 
-	protected void UpdateFacing(float directionX)
+	public virtual void UpdateFacing(float directionX)
 	{
 		if (Mathf.Abs(directionX) < 0.1f) return;
 
@@ -490,22 +643,51 @@ public partial class BaseEnemy : CharacterBody2D
 			_facingRight = newFacingRight;
 			if (_animatedSprite != null)
 				_animatedSprite.FlipH = !_facingRight;
+			
+			// Update attack areas immediately
+			UpdateNormalAttackAreaFacing();
+			UpdateSpecialAttackAreaFacing();
 		}
 	}
 
-	protected void UpdateAttackAreaFacing(Area2D area)
+	public void UpdateAttackAreaFacing(Area2D area)
 	{
 		if (area == null) return;
 		
-		Vector2 scale = area.Scale;
-		if (!_facingRight)
+		// Store original transform data if not already stored
+		if (!area.HasMeta("original_position"))
 		{
-			area.Scale = new Vector2(-Mathf.Abs(scale.X), scale.Y);
+			area.SetMeta("original_position", area.Position);
+		}
+		if (!area.HasMeta("original_scale"))
+		{
+			area.SetMeta("original_scale", area.Scale);
+		}
+		
+		Vector2 originalPos = area.GetMeta("original_position").AsVector2();
+		Vector2 originalScale = area.GetMeta("original_scale").AsVector2();
+		
+		if (_facingRight)
+		{
+			// Facing right - use original position and scale
+			area.Position = originalPos;
+			area.Scale = originalScale;
 		}
 		else
 		{
-			area.Scale = new Vector2(Mathf.Abs(scale.X), scale.Y);
+			// Facing left - flip both position and scale
+			area.Position = new Vector2(-originalPos.X, originalPos.Y);
+			area.Scale = new Vector2(-originalScale.X, originalScale.Y);
 		}
+		
+		// Force update collision shape
+		var collisionShape = area.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
+		if (collisionShape != null)
+		{
+			collisionShape.SetDeferred("disabled", false);
+		}
+		
+		GD.Print($"Updated {area.Name} facing - Position: {area.Position}, Scale: {area.Scale}, FacingRight: {_facingRight}");
 	}
 
 	protected void UpdateNormalAttackAreaFacing()
@@ -622,16 +804,14 @@ public partial class BaseEnemy : CharacterBody2D
 		
 		if (controlled)
 		{
-			// Reset attack state and disable AI
+			// Reset attack state but keep physics process running for timers
 			ResetAttackState();
 			TransitionToState(EnemyState.Idle);
-			SetPhysicsProcess(false);
-			SetProcess(false);
+			SetProcess(false); // Only disable regular process
 			GD.Print($"{Name} now controlled by player - AI disabled");
 		}
 		else
 		{
-			SetPhysicsProcess(true);
 			SetProcess(true);
 			TransitionToState(EnemyState.Chase);
 			GD.Print($"{Name} AI enabled");
@@ -649,6 +829,24 @@ public partial class BaseEnemy : CharacterBody2D
 			_normalAttackArea.SetDeferred("monitoring", false);
 		if (_specialAttackArea != null)
 			_specialAttackArea.SetDeferred("monitoring", false);
+	}
+
+	public virtual void UpdateTimersPlayerControlled(float delta)
+	{
+		if (_attackCooldown > 0)
+		{
+			_attackCooldown -= delta;
+			// Don't automatically re-enable attacking here for player control
+		}
+
+		if (_isStunned && _stunDuration > 0)
+		{
+			_stunDuration -= delta;
+			if (_stunDuration <= 0)
+			{
+				_isStunned = false;
+			}
+		}
 	}
 
 	#endregion
@@ -690,7 +888,7 @@ public partial class BaseEnemy : CharacterBody2D
 		if (!_isPlayerControlled && body.IsInGroup("Player"))
 			return true;
 		
-		if (_isPlayerControlled && !body.IsInGroup("Allies") && !body.IsInGroup("Player"))
+		if (_isPlayerControlled && !body.IsInGroup("Allies") && !body.IsInGroup("Player") && !body.IsInGroup("SummonedMonsters"))
 			return true;
 			
 		return false;
@@ -702,7 +900,7 @@ public partial class BaseEnemy : CharacterBody2D
 
 	public bool IsDead() => _currentHealth <= 0;
 	public bool CanBePossessed() => CurrentHealth <= 0 || (float)CurrentHealth / MaxHealth <= PossessThresholdF;
-	public bool CanAttack() => _canAttack && _attackCooldown <= 0 && !_isAttacking && !_isAttackingUninterruptible;
+	public bool CanAttack() => _canAttack && _attackCooldown <= 0 && !_isAttacking && !_isAttackingUninterruptible && !_isStunned;
 	public bool IsAttacking() => _isAttacking || _isAttackingUninterruptible;
 
 	// Getters for Player class
