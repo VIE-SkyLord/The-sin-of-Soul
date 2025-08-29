@@ -3,20 +3,20 @@ using System;
 
 public partial class SpSoulBar : TextureProgressBar
 {
-	[Export] public NodePath PlayerPath; // Tham chiếu đến node Player
-	private Player player; // Biến lưu tham chiếu đến Player
+	[Export] public NodePath PlayerPath; // Reference to Player node
+	private Player player; // Player reference
 	
 	public override void _Ready()
 	{
-		// Lấy tham chiếu đến node Player
+		// Get reference to Player node
 		if (PlayerPath != null)
 		{
 			player = GetNode<Player>(PlayerPath);
 			if (player != null)
 			{
-				MaxValue = player.MaxSoulSP; // Đặt giá trị tối đa của ProgressBar
-				Value = player.CurSoulSP;    // Đặt giá trị ban đầu
-				UpdateSoulBar();           // Cập nhật ngay khi khởi tạo
+				MaxValue = player.MaxSoulSP; // Set maximum value of ProgressBar
+				Value = player.CurSoulSP;    // Set initial value
+				UpdateSoulBar();           // Update immediately on initialization
 			}
 			else
 			{
@@ -27,7 +27,7 @@ public partial class SpSoulBar : TextureProgressBar
 
 	public override void _Process(double delta)
 	{
-		// Cập nhật thanh máu theo thời gian thực khi CurSoulSP thay đổi
+		// Update SP bar in real-time when CurSoulSP changes
 		if (player != null)
 		{
 			UpdateSoulBar();
@@ -38,7 +38,9 @@ public partial class SpSoulBar : TextureProgressBar
 	{
 		if (player != null)
 		{
-			Value = player.CurSoulSP; // Đồng bộ giá trị với CurSoulSP
+			// SP always uses player's original values, not possessed enemy
+			MaxValue = player.MaxSoulSP;
+			Value = player.CurSoulSP; // Sync value with CurSoulSP
 		}
 	}
 }

@@ -588,33 +588,25 @@ public partial class BaseEnemy : CharacterBody2D
 
 	protected virtual void FindTarget()
 	{
-		// Priority: Player > Other enemies > Summoned monsters
-		var players = GetTree().GetNodesInGroup("Player");
-		if (players.Count > 0)
-		{
-			Node2D player = players[0] as Node2D;
-			if (IsValidTarget(player))
-			{
-				_target = player;
-				return;
-			}
-		}
+		// FIXED: Clear current target first to reassess
+		_target = null;
 		
-		// Find other valid targets based on groups
-		FindAlternativeTargets();
-	}
-
-	protected virtual void FindAlternativeTargets()
-	{
+		// Find appropriate targets based on current group membership
 		if (IsInGroup("Enemies"))
 		{
-			// Regular enemies target summoned monsters and allies
-			FindTargetInGroups(new[] { "SummonedMonsters", "Allies" });
+			// Regular enemies target: Player, PlayerControlled, Allies, SummonedMonsters
+			FindTargetInGroups(new[] { "Player", "PlayerControlled", "Allies", "SummonedMonsters" });
 		}
-		else if (IsInGroup("SummonedMonsters") || IsInGroup("Allies"))
+		else if (IsInGroup("PlayerControlled") || IsInGroup("Allies") || IsInGroup("SummonedMonsters"))
 		{
-			// Player-controlled entities target enemies
+			// Player-controlled entities target: Enemies only
 			FindTargetInGroups(new[] { "Enemies" });
+		}
+		
+		// If no target found through groups, try direct search
+		if (_target == null)
+		{
+			FindNearestValidTarget();
 		}
 	}
 
@@ -626,9 +618,9 @@ public partial class BaseEnemy : CharacterBody2D
 		foreach (string group in targetGroups)
 		{
 			var targets = GetTree().GetNodesInGroup(group);
-			foreach (Node2D target in targets)
+			foreach (Node node in targets)
 			{
-				if (IsValidTarget(target))
+				if (node is Node2D target && IsValidTarget(target))
 				{
 					float distance = GlobalPosition.DistanceTo(target.GlobalPosition);
 					if (distance < nearestDistance)
@@ -641,6 +633,58 @@ public partial class BaseEnemy : CharacterBody2D
 		}
 		
 		_target = nearestTarget;
+		
+		if (_target != null)
+		{
+			GD.Print($"{Name} found target: {_target.Name} in groups: {string.Join(", ", targetGroups)}");
+		}
+	}
+
+	protected virtual void FindNearestValidTarget()
+	{
+		// Fallback method to find any valid target
+		var allBodies = GetTree().GetNodesInGroup("Player");
+		allBodies.AddRange(GetTree().GetNodesInGroup("Enemies"));
+		allBodies.AddRange(GetTree().GetNodesInGroup("Allies"));
+		allBodies.AddRange(GetTree().GetNodesInGroup("SummonedMonsters"));
+		allBodies.AddRange(GetTree().GetNodesInGroup("PlayerControlled"));
+		
+		Node2D nearestTarget = null;
+		float nearestDistance = DetectionRange;
+		
+		foreach (Node node in allBodies)
+		{
+			if (node is Node2D target && IsValidTarget(target) && CanTargetBasedOnGroups(target))
+			{
+				float distance = GlobalPosition.DistanceTo(target.GlobalPosition);
+				if (distance < nearestDistance)
+				{
+					nearestDistance = distance;
+					nearestTarget = target;
+				}
+			}
+		}
+		
+		_target = nearestTarget;
+	}
+
+	protected virtual bool CanTargetBasedOnGroups(Node2D potentialTarget)
+	{
+		if (IsInGroup("Enemies"))
+		{
+			// Enemies can target player-controlled entities and allies
+			return potentialTarget.IsInGroup("Player") || 
+				   potentialTarget.IsInGroup("PlayerControlled") || 
+				   potentialTarget.IsInGroup("Allies") || 
+				   potentialTarget.IsInGroup("SummonedMonsters");
+		}
+		else if (IsInGroup("PlayerControlled") || IsInGroup("Allies") || IsInGroup("SummonedMonsters"))
+		{
+			// Player-controlled entities target enemies
+			return potentialTarget.IsInGroup("Enemies");
+		}
+		
+		return false;
 	}
 
 	protected virtual bool IsValidTarget(Node2D potentialTarget)
@@ -648,7 +692,24 @@ public partial class BaseEnemy : CharacterBody2D
 		return potentialTarget != null && 
 			   potentialTarget != this && 
 			   !potentialTarget.IsQueuedForDeletion() &&
-			   potentialTarget.HasMethod("TakeDamage");
+			   potentialTarget.HasMethod("TakeDamage") &&
+			   !IsSameControllerAs(potentialTarget);
+	}
+
+	protected virtual bool IsSameControllerAs(Node2D other)
+	{
+		// Check if both are player-controlled
+		bool thisPlayerControlled = IsInGroup("Player") || IsInGroup("PlayerControlled") || 
+									IsInGroup("Allies") || IsInGroup("SummonedMonsters");
+		bool otherPlayerControlled = other.IsInGroup("Player") || other.IsInGroup("PlayerControlled") || 
+									 other.IsInGroup("Allies") || other.IsInGroup("SummonedMonsters");
+		
+		// Check if both are enemies
+		bool thisEnemy = IsInGroup("Enemies");
+		bool otherEnemy = other.IsInGroup("Enemies");
+		
+		// Same controller if both player-controlled or both enemies
+		return (thisPlayerControlled && otherPlayerControlled) || (thisEnemy && otherEnemy);
 	}
 
 	public virtual void UpdateFacing(float directionX)
@@ -822,17 +883,20 @@ public partial class BaseEnemy : CharacterBody2D
 		
 		if (controlled)
 		{
-			// Reset attack state but keep physics process running for timers
+			// Reset attack state and target when taking control
 			ResetAttackState();
+			_target = null; // Clear current target
 			TransitionToState(EnemyState.Idle);
-			SetProcess(false); // Only disable regular process
-			GD.Print($"{Name} now controlled by player - AI disabled");
+			SetProcess(false); // Disable AI processing
+			GD.Print($"{Name} now controlled by player - AI disabled, target cleared");
 		}
 		else
 		{
+			// Re-enable AI and force target search
 			SetProcess(true);
-			TransitionToState(EnemyState.Chase);
-			GD.Print($"{Name} AI enabled");
+			_target = null; // Clear target to force new search
+			TransitionToState(EnemyState.Idle); // Will transition to chase when target found
+			GD.Print($"{Name} AI enabled - will search for new targets");
 		}
 	}
 
@@ -902,14 +966,35 @@ public partial class BaseEnemy : CharacterBody2D
 		if (body == null || body == this || _damageDealt) return false;
 		if (!body.HasMethod("TakeDamage")) return false;
 
-		// Logic for different control states
-		if (!_isPlayerControlled && body.IsInGroup("Player"))
-			return true;
+		// FIXED: Enhanced group-based targeting logic
+		bool canDamage = false;
 		
-		if (_isPlayerControlled && !body.IsInGroup("Allies") && !body.IsInGroup("Player") && !body.IsInGroup("SummonedMonsters"))
-			return true;
-			
-		return false;
+		if (IsInGroup("Enemies"))
+		{
+			// Enemies can damage: Player, PlayerControlled, Allies, SummonedMonsters
+			canDamage = body.IsInGroup("Player") || 
+					   body.IsInGroup("PlayerControlled") || 
+					   body.IsInGroup("Allies") || 
+					   body.IsInGroup("SummonedMonsters");
+		}
+		else if (IsInGroup("PlayerControlled") || IsInGroup("Player") || 
+				 IsInGroup("Allies") || IsInGroup("SummonedMonsters"))
+		{
+			// Player-controlled entities can damage: Enemies
+			canDamage = body.IsInGroup("Enemies");
+		}
+		
+		// Additional check: don't damage entities with same controller
+		if (canDamage)
+		{
+			canDamage = !IsSameControllerAs(body);
+		}
+		
+		GD.Print($"{Name} damage check on {body.Name}: CanDamage={canDamage}, " +
+				$"MyGroups=[{string.Join(",", GetGroups())}], " +
+				$"TargetGroups=[{string.Join(",", body.GetGroups())}]");
+		
+		return canDamage;
 	}
 
 	#endregion

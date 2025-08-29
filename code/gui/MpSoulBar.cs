@@ -3,20 +3,20 @@ using System;
 
 public partial class MpSoulBar : TextureProgressBar
 {
-	[Export] public NodePath PlayerPath; // Tham chiếu đến node Player
-	private Player player; // Biến lưu tham chiếu đến Player
+	[Export] public NodePath PlayerPath; // Reference to Player node
+	private Player player; // Player reference
 	
 	public override void _Ready()
 	{
-		// Lấy tham chiếu đến node Player
+		// Get reference to Player node
 		if (PlayerPath != null)
 		{
 			player = GetNode<Player>(PlayerPath);
 			if (player != null)
 			{
-				MaxValue = player.MaxSoulMP; // Đặt giá trị tối đa của ProgressBar
-				Value = player.CurSoulMP;    // Đặt giá trị ban đầu
-				UpdateManaBar();           // Cập nhật ngay khi khởi tạo
+				MaxValue = player.MaxSoulMP; // Set maximum value of ProgressBar
+				Value = player.CurSoulMP;    // Set initial value
+				UpdateManaBar();           // Update immediately on initialization
 			}
 			else
 			{
@@ -27,7 +27,7 @@ public partial class MpSoulBar : TextureProgressBar
 
 	public override void _Process(double delta)
 	{
-		// Cập nhật thanh máu theo thời gian thực khi CurSoulMP thay đổi
+		// Update mana bar in real-time when CurSoulMP changes
 		if (player != null)
 		{
 			UpdateManaBar();
@@ -38,7 +38,9 @@ public partial class MpSoulBar : TextureProgressBar
 	{
 		if (player != null)
 		{
-			Value = player.CurSoulMP; // Đồng bộ giá trị với CurSoulMP
+			// MP always uses player's original values, not possessed enemy
+			MaxValue = player.MaxSoulMP;
+			Value = player.CurSoulMP; // Sync value with CurSoulMP
 		}
 	}
 }

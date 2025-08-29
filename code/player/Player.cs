@@ -83,6 +83,10 @@ public partial class Player : CharacterBody2D
 
 	private readonly string fullPotionTexturePath = "res://img/GUI/Status/Healing_Potion.png";
 	private readonly string emptyPotionTexturePath = "res://img/GUI/Status/Healing_Potion_Used.png";
+	
+	public bool IsInPossessedBody => isPossessing && possessedEnemy != null;
+	public int GetCurrentMaxHP() => isPossessing && possessedEnemy != null ? possessedEnemy.GetMaxHP() : MaxSoulHP;
+	public int GetCurrentHP() => isPossessing && possessedEnemy != null ? possessedEnemy.GetHP() : CurSoulHP;
 
 	public override void _Ready()
 	{
@@ -482,19 +486,33 @@ public partial class Player : CharacterBody2D
 		isPossessing = true;
 		_currentBody = target;
 
-		// Handle collision settings
+		// FIXED: Proper collision and group management
 		if (target is CharacterBody2D targetBody)
 		{
+			// Store original settings
 			target.SetOriginalCollisionLayer(targetBody.CollisionLayer, targetBody.CollisionMask);
-			targetBody.CollisionLayer = originalCollisionLayer;
-			targetBody.CollisionMask = originalCollisionMask;
+			
+			// Set to player collision settings
+			targetBody.CollisionLayer = originalCollisionLayer; // Player layer (bit 0)
+			targetBody.CollisionMask = originalCollisionMask;   // Can interact with environment
 		}
 
-		// Update groups
+		// FIXED: Clear enemy from all enemy-related groups first
 		if (target.IsInGroup("Enemies"))
 		{
 			target.RemoveFromGroup("Enemies");
-			target.AddToGroup("Player");
+		}
+		
+		// Add to player-controlled groups
+		target.AddToGroup("Player");
+		target.AddToGroup("PlayerControlled"); // New group for possessed entities
+		
+		// FIXED: Special handling for summoned monsters
+		if (target == summonedMonster)
+		{
+			// Summoned monsters keep their ally status but are now player-controlled
+			if (!target.IsInGroup("Allies")) target.AddToGroup("Allies");
+			if (!target.IsInGroup("SummonedMonsters")) target.AddToGroup("SummonedMonsters");
 		}
 
 		// Set player control
@@ -505,6 +523,7 @@ public partial class Player : CharacterBody2D
 		if (playerCollision != null) playerCollision.Disabled = true;
 
 		GD.Print($"Possessed {target.Name}: {hostHp}/{hostMaxHp} HP ({playerRatio:P0} of player health)");
+		GD.Print($"Groups after possession: {string.Join(", ", target.GetGroups())}");
 	}
 
 	private void ReleaseTarget()
@@ -517,31 +536,44 @@ public partial class Player : CharacterBody2D
 		float hostRatio = (float)hostHp / hostMaxHp;
 		CurSoulHP = Mathf.Max(1, (int)(MaxSoulHP * hostRatio));
 
-		// Restore enemy collision and groups
+		// FIXED: Remove from player-related groups first
+		if (possessedEnemy.IsInGroup("Player"))
+		{
+			possessedEnemy.RemoveFromGroup("Player");
+		}
+		
+		if (possessedEnemy.IsInGroup("PlayerControlled"))
+		{
+			possessedEnemy.RemoveFromGroup("PlayerControlled");
+		}
+
+		// FIXED: Restore collision and groups based on enemy type
 		if (possessedEnemy is CharacterBody2D targetBody)
 		{
 			if (possessedEnemy != summonedMonster)
 			{
+				// Regular enemies: restore original collision and add back to Enemies group
 				uint originalLayer = possessedEnemy.GetOriginalCollisionLayer();
 				uint originalMask = possessedEnemy.GetOriginalCollisionMask();
 				targetBody.CollisionLayer = originalLayer;
 				targetBody.CollisionMask = originalMask;
-			}
-		}
-
-		// Update groups - don't add summoned monsters back to enemies
-		if (possessedEnemy.IsInGroup("Player"))
-		{
-			possessedEnemy.RemoveFromGroup("Player");
-			
-			if (possessedEnemy != summonedMonster)
-			{
+				
+				// FIXED: Add back to Enemies group and disable player control
 				possessedEnemy.AddToGroup("Enemies");
+				possessedEnemy.SetIsControlledByPlayer(false);
+			}
+			else
+			{
+				// Summoned monsters: keep ally collision and stay player-controlled
+				targetBody.CollisionLayer = 1u << 5; // Ally layer
+				targetBody.CollisionMask = (1u << 1) | (1u << 2); // Environment + walls
+				
+				// Keep as player-controlled ally
+				possessedEnemy.SetIsControlledByPlayer(true);
+				if (!possessedEnemy.IsInGroup("Allies")) possessedEnemy.AddToGroup("Allies");
+				if (!possessedEnemy.IsInGroup("SummonedMonsters")) possessedEnemy.AddToGroup("SummonedMonsters");
 			}
 		}
-
-		// Disable player control
-		possessedEnemy.SetIsControlledByPlayer(false);
 
 		// Collect dead enemy if not a summoned monster
 		if (hostHp <= 0 && possessedEnemy != summonedMonster)
@@ -567,13 +599,7 @@ public partial class Player : CharacterBody2D
 		possessedEnemy = null;
 
 		GD.Print($"Released possession: Player has {CurSoulHP}/{MaxSoulHP} HP");
-
-		// Re-enable summoned monster control
-		if (tempEnemy == summonedMonster)
-		{
-			tempEnemy.SetIsControlledByPlayer(true);
-			GD.Print("Summoned monster returned to controlled state");
-		}
+		GD.Print($"Released enemy groups: {string.Join(", ", tempEnemy.GetGroups())}");
 	}
 
 	private void ProcessPossessedEnemyPhysics(BaseEnemy enemyBody, double delta)

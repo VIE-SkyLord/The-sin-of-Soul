@@ -3,20 +3,18 @@ using System;
 
 public partial class HpSoulBar : TextureProgressBar
 {
-	[Export] public NodePath PlayerPath; // Tham chiếu đến node Player
-	private Player player; // Biến lưu tham chiếu đến Player
+	[Export] public NodePath PlayerPath; // Reference to Player node
+	private Player player; // Player reference
 
 	public override void _Ready()
 	{
-		// Lấy tham chiếu đến node Player
+		// Get reference to Player node
 		if (PlayerPath != null)
 		{
 			player = GetNode<Player>(PlayerPath);
 			if (player != null)
 			{
-				MaxValue = player.MaxSoulHP; // Đặt giá trị tối đa của ProgressBar
-				Value = player.CurSoulHP;    // Đặt giá trị ban đầu
-				UpdateHealthBar();           // Cập nhật ngay khi khởi tạo
+				UpdateHealthBar(); // Update immediately on initialization
 			}
 			else
 			{
@@ -27,7 +25,7 @@ public partial class HpSoulBar : TextureProgressBar
 
 	public override void _Process(double delta)
 	{
-		// Cập nhật thanh máu theo thời gian thực khi CurSoulHP thay đổi
+		// Update health bar in real-time
 		if (player != null)
 		{
 			UpdateHealthBar();
@@ -38,15 +36,21 @@ public partial class HpSoulBar : TextureProgressBar
 	{
 		if (player != null)
 		{
-			Value = player.CurSoulHP; // Đồng bộ giá trị với CurSoulHP
-			// Thêm hiệu ứng khi máu thấp
+			// FIXED: Get current health and max health based on possession state
+			int currentHP = player.GetCurrentHP();
+			int maxHP = player.GetCurrentMaxHP();
+			
+			MaxValue = maxHP;
+			Value = currentHP;
+			
+			// Add visual effect when health is low
 			if (Value / MaxValue < 0.25f)
 			{
-				Modulate = new Color(1.0f, 0.0f, 0.0f); // Đổi màu thành đỏ khi máu dưới 30%
+				Modulate = new Color(1.0f, 0.0f, 0.0f); // Red when health below 25%
 			}
 			else
 			{
-				Modulate = new Color(1, 1, 1); // Màu mặc định
+				Modulate = new Color(1, 1, 1); // Default color
 			}
 		}
 	}
