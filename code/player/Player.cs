@@ -31,6 +31,9 @@ public partial class Player : CharacterBody2D
 	private BaseEnemy possessedEnemy = null; // Changed to BaseEnemy type
 	public Node2D _currentBody;
 
+	// ADDED: Store player's facing direction separately
+	private bool playerFacingRight = true;
+
 	// Summoning system
 	[Export] public PackedScene[] MonsterScenes = new PackedScene[6];
 	[Export] public int[] SummonCosts = new int[6];
@@ -42,7 +45,7 @@ public partial class Player : CharacterBody2D
 	private static readonly string LogFilePath = Path.Combine(OS.GetUserDataDir(), "player_debug.log");
 	private CollisionShape2D playerCollision;
 	private AnimatedSprite2D animatedSprite;
-	private bool facingRight = true;
+	private bool facingRight = true; // This tracks current body's facing
 
 	// Movement and combat state (unchanged)
 	public bool isDashing = false;
@@ -118,6 +121,9 @@ public partial class Player : CharacterBody2D
 		FloorBlockOnWall = false;
 		SafeMargin = 0.02f;
 		FloorStopOnSlope = true;
+
+		// ADDED: Initialize player facing direction
+		playerFacingRight = facingRight;
 
 		GD.Print($"Player setup - Layer: {CollisionLayer}, Mask: {CollisionMask}");
 		SetProcessInput(true);
@@ -332,6 +338,7 @@ public partial class Player : CharacterBody2D
 				velocity.X = Mathf.MoveToward(velocity.X, desiredX, speed);
 			}
 
+			// UPDATED: Update facing direction and store player facing
 			if (direction != 0)
 			{
 				var sprite = _currentBody.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
@@ -342,6 +349,12 @@ public partial class Player : CharacterBody2D
 					{
 						facingRight = newFacingRight;
 						sprite.FlipH = !facingRight;
+						
+						// ADDED: Store player's facing direction when controlling main body
+						if (!isPossessing)
+						{
+							playerFacingRight = facingRight;
+						}
 					}
 				}
 			}
@@ -461,10 +474,13 @@ public partial class Player : CharacterBody2D
 			return;
 		}
 
+		// UPDATED: Store current player facing before possessing
+		playerFacingRight = facingRight;
+
 		// Update facing direction to match player
 		if (target.HasMethod("UpdateFacing"))
 		{
-			float direction = facingRight ? 1f : -1f;
+			float direction = playerFacingRight ? 1f : -1f;
 			target.Call("UpdateFacing", direction);
 		}
 		else
@@ -472,9 +488,12 @@ public partial class Player : CharacterBody2D
 			var sprite = target.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
 			if (sprite != null)
 			{
-				sprite.FlipH = !facingRight;
+				sprite.FlipH = !playerFacingRight;
 			}
 		}
+
+		// Update current body facing to match
+		facingRight = playerFacingRight;
 
 		// Set enemy health based on player health ratio
 		int hostMaxHp = target.GetMaxHP();
@@ -581,7 +600,7 @@ public partial class Player : CharacterBody2D
 			CollectMonster(possessedEnemy);
 		}
 
-		// Restore player
+		// FIXED: Restore player facing direction and sprite
 		isPossessing = false;
 		_currentBody = this;
 
@@ -589,6 +608,13 @@ public partial class Player : CharacterBody2D
 		Visible = true;
 		SetPhysicsProcess(true);
 		SetProcessInput(true);
+
+		// ADDED: Restore player's facing direction
+		facingRight = playerFacingRight;
+		if (animatedSprite != null)
+		{
+			animatedSprite.FlipH = !facingRight;
+		}
 
 		Position = possessedEnemy.Position + new Vector2(0, -20);
 		
@@ -599,6 +625,7 @@ public partial class Player : CharacterBody2D
 		possessedEnemy = null;
 
 		GD.Print($"Released possession: Player has {CurSoulHP}/{MaxSoulHP} HP");
+		GD.Print($"Player facing restored to: {(facingRight ? "Right" : "Left")}");
 		GD.Print($"Released enemy groups: {string.Join(", ", tempEnemy.GetGroups())}");
 	}
 
@@ -630,13 +657,15 @@ public partial class Player : CharacterBody2D
 			float speed = enemyBody.Get("Speed").AsSingle() is float s ? s : Speed;
 			velocity.X = Mathf.MoveToward(velocity.X, direction * speed, speed);
 			
-			// Update facing direction and attack areas
+			// UPDATED: Update facing direction and store it for later restoration
 			if (direction != 0)
 			{
 				bool newFacingRight = direction > 0;
 				if (newFacingRight != facingRight)
 				{
 					facingRight = newFacingRight;
+					playerFacingRight = facingRight; // Update player's stored facing
+					
 					var sprite = body.GetNodeOrNull<AnimatedSprite2D>("AnimatedSprite2D");
 					if (sprite != null)
 					{
@@ -719,6 +748,8 @@ public partial class Player : CharacterBody2D
 		if (direction != 0)
 		{
 			facingRight = direction > 0;
+			playerFacingRight = facingRight; // Update stored player facing
+			
 			if (possessedEnemy.HasMethod("UpdateFacing"))
 			{
 				possessedEnemy.Call("UpdateFacing", direction);
@@ -923,6 +954,11 @@ public partial class Player : CharacterBody2D
 		if (sprite != null)
 		{
 			facingRight = direction > 0;
+			// ADDED: Update player facing when dashing
+			if (!isPossessing)
+			{
+				playerFacingRight = facingRight;
+			}
 			sprite.FlipH = !facingRight;
 			sprite.Play("dash");
 		}
