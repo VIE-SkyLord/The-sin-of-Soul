@@ -480,6 +480,8 @@ public partial class BaseEnemy : CharacterBody2D
 		// Enable damage after a short delay
 		var damageTimer = GetTree().CreateTimer(0.3f);
 		damageTimer.Timeout += () => {
+			GD.Print("Sword normal attack - enabling damage area");
+			DebugAttackAreas();
 			if (_isAttacking && _normalAttackArea != null)
 			{
 				_normalAttackArea.SetDeferred("monitoring", true);
@@ -798,7 +800,7 @@ public partial class BaseEnemy : CharacterBody2D
 		{
 			// Flash red
 			_animatedSprite.Modulate = Colors.Red;
-			var colorTimer = GetTree().CreateTimer(0.15f);
+			var colorTimer = GetTree().CreateTimer(0.5f);
 			colorTimer.Timeout += () => { 
 				if (_animatedSprite != null)
 					_animatedSprite.Modulate = Colors.White; 
@@ -966,35 +968,76 @@ public partial class BaseEnemy : CharacterBody2D
 		if (body == null || body == this || _damageDealt) return false;
 		if (!body.HasMethod("TakeDamage")) return false;
 
-		// FIXED: Enhanced group-based targeting logic
+		// FIXED: Simplified and more reliable group-based targeting logic
 		bool canDamage = false;
 		
-		if (IsInGroup("Enemies"))
+		// Get this entity's primary allegiance
+		bool thisIsEnemy = IsInGroup("Enemies");
+		bool thisIsPlayerSide = IsInGroup("Player") || IsInGroup("PlayerControlled") || 
+								IsInGroup("Allies") || IsInGroup("SummonedMonsters");
+		
+		// Get target's primary allegiance  
+		bool targetIsEnemy = body.IsInGroup("Enemies");
+		bool targetIsPlayerSide = body.IsInGroup("Player") || body.IsInGroup("PlayerControlled") || 
+								  body.IsInGroup("Allies") || body.IsInGroup("SummonedMonsters");
+		
+		// Damage rules: enemies vs player-side, player-side vs enemies
+		if (thisIsEnemy && targetIsPlayerSide)
 		{
-			// Enemies can damage: Player, PlayerControlled, Allies, SummonedMonsters
-			canDamage = body.IsInGroup("Player") || 
-					   body.IsInGroup("PlayerControlled") || 
-					   body.IsInGroup("Allies") || 
-					   body.IsInGroup("SummonedMonsters");
+			canDamage = true;
 		}
-		else if (IsInGroup("PlayerControlled") || IsInGroup("Player") || 
-				 IsInGroup("Allies") || IsInGroup("SummonedMonsters"))
+		else if (thisIsPlayerSide && targetIsEnemy)
 		{
-			// Player-controlled entities can damage: Enemies
-			canDamage = body.IsInGroup("Enemies");
+			canDamage = true;
 		}
 		
-		// Additional check: don't damage entities with same controller
+		// Additional safety check: never damage same entity type
 		if (canDamage)
 		{
-			canDamage = !IsSameControllerAs(body);
+			// Don't damage if both are the same specific type
+			bool bothEnemies = thisIsEnemy && targetIsEnemy;
+			bool bothPlayerSide = thisIsPlayerSide && targetIsPlayerSide;
+			
+			if (bothEnemies || bothPlayerSide)
+			{
+				canDamage = false;
+			}
 		}
 		
 		GD.Print($"{Name} damage check on {body.Name}: CanDamage={canDamage}, " +
-				$"MyGroups=[{string.Join(",", GetGroups())}], " +
-				$"TargetGroups=[{string.Join(",", body.GetGroups())}]");
+				$"ThisEnemy={thisIsEnemy}, ThisPlayerSide={thisIsPlayerSide}, " +
+				$"TargetEnemy={targetIsEnemy}, TargetPlayerSide={targetIsPlayerSide}");
 		
 		return canDamage;
+	}
+
+	// Add this debug method to check collision settings
+	protected void DebugAttackAreas()
+	{
+		GD.Print($"=== ATTACK AREA DEBUG for {Name} ===");
+		
+		if (_normalAttackArea != null)
+		{
+			GD.Print($"Normal Attack Area - Monitoring: {_normalAttackArea.Monitoring}, " +
+					$"Layer: {_normalAttackArea.CollisionLayer}, Mask: {_normalAttackArea.CollisionMask}");
+			
+			var collision = _normalAttackArea.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
+			GD.Print($"Normal Attack Collision - Exists: {collision != null}, " +
+					$"Disabled: {collision?.Disabled}, Shape: {collision?.Shape}");
+		}
+		
+		if (_specialAttackArea != null)
+		{
+			GD.Print($"Special Attack Area - Monitoring: {_specialAttackArea.Monitoring}, " +
+					$"Layer: {_specialAttackArea.CollisionLayer}, Mask: {_specialAttackArea.CollisionMask}");
+					
+			var collision = _specialAttackArea.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
+			GD.Print($"Special Attack Collision - Exists: {collision != null}, " +
+					$"Disabled: {collision?.Disabled}, Shape: {collision?.Shape}");
+		}
+		
+		// Also debug this enemy's collision
+		GD.Print($"Enemy Body - Layer: {CollisionLayer}, Mask: {CollisionMask}");
 	}
 
 	#endregion

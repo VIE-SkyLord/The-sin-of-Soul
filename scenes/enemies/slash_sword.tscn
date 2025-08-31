@@ -337,11 +337,15 @@ animation = &"idle"
 autoplay = "idle"
 
 [node name="NormalAttackArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="NormalAttackArea"]
 shape = SubResource("ConvexPolygonShape2D_p6wg4")
 
 [node name="SpecialAttackArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="SpecialAttackArea"]
 position = Vector2(64, -8)

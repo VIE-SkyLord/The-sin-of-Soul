@@ -219,24 +219,35 @@ public partial class SlashSwordEnemy : BaseEnemy
 		
 		var damageTimer = GetTree().CreateTimer(0.5f);
 		damageTimer.Timeout += () => {
+			GD.Print("Sword normal attack - enabling damage area");
 			if (_isAttacking && _specialAttackArea != null)
 			{
 				_specialAttackArea.SetDeferred("monitoring", true);
+				GD.Print("Special attack area monitoring enabled");
 				
 				if (_heavyAttackAudio != null && _heavyAttackAudio.Stream != null)
 					_heavyAttackAudio.Play();
 				
 				var disableTimer = GetTree().CreateTimer(0.15f);
 				disableTimer.Timeout += () => {
+					GD.Print("Sword normal attack - disabling damage area");
 					if (_specialAttackArea != null)
+					{
 						_specialAttackArea.SetDeferred("monitoring", false);
+						GD.Print("Special attack area monitoring disabled");
+					}
 				};
+			}
+			else
+			{
+				GD.Print($"Cannot enable damage - _isAttacking: {_isAttacking}, _specialAttackArea: {_specialAttackArea != null}");
 			}
 		};
 		
 		var endTimer = GetTree().CreateTimer(1.0f);
 		endTimer.Timeout += () => {
 			_isMovementLocked = false; // Unlock movement
+			GD.Print("Ending player attack and unlocking movement");
 			EndPlayerAttack();
 		};
 	}
@@ -246,6 +257,7 @@ public partial class SlashSwordEnemy : BaseEnemy
 		PlayAnimation("special_attack");
 		UpdateSpecialAttackAreaFacing();
 		_currentComboHit = 0;
+		_isMovementLocked = true; // Lock movement during entire combo
 		
 		GD.Print("=== SWORD PLAYER SPECIAL ATTACK: 3-Hit Combo ===");
 		
@@ -264,9 +276,6 @@ public partial class SlashSwordEnemy : BaseEnemy
 
 		_currentComboHit++;
 		_damageDealt = false;
-		
-		// Keep movement locked during combo
-		_isMovementLocked = true;
 		
 		// Alternate between normal and special areas for variety
 		bool useSpecialArea = (_currentComboHit == 2); // Second hit is stronger
@@ -287,17 +296,20 @@ public partial class SlashSwordEnemy : BaseEnemy
 		// Enable damage after short delay
 		var damageTimer = GetTree().CreateTimer(0.3f);
 		damageTimer.Timeout += () => {
+			GD.Print($"Combo hit {_currentComboHit} - enabling damage area");
 			if (_isAttacking)
 			{
 				if (useSpecialArea && _specialAttackArea != null)
 				{
 					_specialAttackArea.SetDeferred("monitoring", true);
+					GD.Print("Special attack area monitoring enabled for combo");
 					
 					if (_heavyAttackAudio != null && _heavyAttackAudio.Stream != null)
 						_heavyAttackAudio.Play();
 					
 					var disableTimer = GetTree().CreateTimer(COMBO_DAMAGE_WINDOW);
 					disableTimer.Timeout += () => {
+						GD.Print($"Combo hit {_currentComboHit} - disabling special damage area");
 						if (_specialAttackArea != null)
 						{
 							_specialAttackArea.SetDeferred("monitoring", false);
@@ -308,12 +320,14 @@ public partial class SlashSwordEnemy : BaseEnemy
 				else if (!useSpecialArea && _normalAttackArea != null)
 				{
 					_normalAttackArea.SetDeferred("monitoring", true);
+					GD.Print("Normal attack area monitoring enabled for combo");
 					
 					if (_lightAttackAudio != null && _lightAttackAudio.Stream != null)
 						_lightAttackAudio.Play();
 					
 					var disableTimer = GetTree().CreateTimer(COMBO_DAMAGE_WINDOW);
 					disableTimer.Timeout += () => {
+						GD.Print($"Combo hit {_currentComboHit} - disabling normal damage area");
 						if (_normalAttackArea != null)
 						{
 							_normalAttackArea.SetDeferred("monitoring", false);
@@ -321,6 +335,10 @@ public partial class SlashSwordEnemy : BaseEnemy
 						}
 					};
 				}
+			}
+			else
+			{
+				GD.Print($"Cannot enable combo damage - _isAttacking: {_isAttacking}");
 			}
 		};
 		
@@ -343,9 +361,9 @@ public partial class SlashSwordEnemy : BaseEnemy
 	private void EndPlayerCombo()
 	{
 		GD.Print("=== SWORD PLAYER COMBO ENDED ===");
+		_isMovementLocked = false; // Ensure movement is unlocked
 		EndPlayerAttack();
 	}
-
 	#endregion
 
 	protected override EnemyState DecideAttackType()

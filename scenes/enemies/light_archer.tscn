@@ -348,12 +348,16 @@ animation = &"special_attack"
 autoplay = "idle"
 
 [node name="NormalAttackArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="NormalAttackArea"]
 position = Vector2(100, -34)
 shape = SubResource("SegmentShape2D_h7ru1")
 
 [node name="SpecialAttackArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="SpecialAttackArea"]
 position = Vector2(100, -34)
