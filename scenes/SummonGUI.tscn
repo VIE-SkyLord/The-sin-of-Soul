@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://5eb5as6d8cn4"]
+
+[ext_resource type="Script" uid="uid://uxl7h5d8q8dy" path="res://code/player/skill/SummonGUI.cs" id="1_dkdr1"]
+[ext_resource type="PackedScene" uid="uid://cgx3jqffilxbj" path="res://scenes/SummonSlot.tscn" id="2_fnpd0"]
+
+[node name="CanvasLayer" type="CanvasLayer"]
+
+[node name="SummonGUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_dkdr1")
+SlotScene = ExtResource("2_fnpd0")

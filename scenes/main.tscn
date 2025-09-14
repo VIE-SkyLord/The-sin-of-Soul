@@ -1,0 +1,286 @@
+[gd_scene load_steps=11 format=3 uid="uid://n45ta1lam78l"]
+
+[ext_resource type="Script" uid="uid://c7rl0ch4o45l" path="res://code/gui/MainMenu.cs" id="1_sugp2"]
+[ext_resource type="Script" uid="uid://bnsuthy6pgiof" path="res://code/gui/SettingsPanel.cs" id="2_jyhfs"]
+[ext_resource type="Script" uid="uid://c7qjkbcbvn581" path="res://code/gui/LoadPanel.cs" id="3_tbgi4"]
+[ext_resource type="AudioStream" uid="uid://dyisk8rx7llik" path="res://sound/GUI/main-menu_click_soul-steal.mp3" id="4_jyhfs"]
+[ext_resource type="AudioStream" uid="uid://b7keb0ejyd8it" path="res://sound/GUI/main-menu_hover.mp3" id="4_tbgi4"]
+
+[sub_resource type="Gradient" id="Gradient_sgp6g"]
+offsets = PackedFloat32Array(0, 0.496732, 0.993464, 1)
+colors = PackedColorArray(0, 0, 0, 1, 0.374139, 0.374139, 0.374139, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_o5qli"]
+gradient = SubResource("Gradient_sgp6g")
+
+[sub_resource type="LabelSettings" id="LabelSettings_sgp6g"]
+font_size = 60
+outline_size = 10
+outline_color = Color(0, 0, 0, 1)
+shadow_size = 10
+shadow_color = Color(1, 1, 1, 1)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_o5qli"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_0wfyh"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_sugp2")
+
+[node name="BackGround" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("GradientTexture1D_o5qli")
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.056
+anchor_right = 0.5
+anchor_bottom = 0.056
+offset_left = -227.0
+offset_top = -40.32
+offset_right = 227.0
+offset_bottom = 42.68
+grow_horizontal = 2
+text = "The Sins of Soul"
+label_settings = SubResource("LabelSettings_sgp6g")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -500.0
+offset_top = -250.0
+offset_right = 500.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="StartButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Bát đầu"
+icon = SubResource("AtlasTexture_o5qli")
+
+[node name="LoadButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Tải trò chơi"
+
+[node name="SettingsButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Cài đặt"
+
+[node name="ExitButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Thoát game"
+
+[node name="SettingsPanel" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -200.0
+offset_right = 100.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_jyhfs")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="SettingsPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -95.5
+offset_right = 95.5
+offset_bottom = 401.0
+grow_horizontal = 2
+
+[node name="TitleLabel" type="Label" parent="SettingsPanel/VBoxContainer"]
+layout_mode = 2
+text = "Cài đặt trò chơi"
+label_settings = SubResource("LabelSettings_0wfyh")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AudioSettings" type="VBoxContainer" parent="SettingsPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="AudioLabel" type="Label" parent="SettingsPanel/VBoxContainer/AudioSettings"]
+layout_mode = 2
+text = "Bảng âm thanh"
+
+[node name="MasterVolumeLabel" type="Label" parent="SettingsPanel/VBoxContainer/AudioSettings"]
+layout_mode = 2
+text = "Âm lượng chính"
+
+[node name="MasterVolumeSlider" type="HSlider" parent="SettingsPanel/VBoxContainer/AudioSettings"]
+layout_mode = 2
+value = 50.0
+
+[node name="SFXVolumeLabel" type="Label" parent="SettingsPanel/VBoxContainer/AudioSettings"]
+layout_mode = 2
+text = "Hiệu ứng âm thanh"
+
+[node name="SFXVolumeSlider" type="HSlider" parent="SettingsPanel/VBoxContainer/AudioSettings"]
+layout_mode = 2
+value = 50.0
+
+[node name="MusicVolumeLabel" type="Label" parent="SettingsPanel/VBoxContainer/AudioSettings"]
+layout_mode = 2
+text = "Nhạc nền"
+
+[node name="MusicVolumeSlider" type="HSlider" parent="SettingsPanel/VBoxContainer/AudioSettings"]
+layout_mode = 2
+value = 50.0
+
+[node name="VideoSettings" type="VBoxContainer" parent="SettingsPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="VideoLabel" type="Label" parent="SettingsPanel/VBoxContainer/VideoSettings"]
+layout_mode = 2
+text = "Bảng Video"
+
+[node name="ResolutionLabel" type="Label" parent="SettingsPanel/VBoxContainer/VideoSettings"]
+layout_mode = 2
+text = "Độ phân giải"
+
+[node name="ResolutionOption" type="OptionButton" parent="SettingsPanel/VBoxContainer/VideoSettings"]
+layout_mode = 2
+
+[node name="FullscreenCheck" type="CheckBox" parent="SettingsPanel/VBoxContainer/VideoSettings"]
+layout_mode = 2
+text = "Toàn màn hình"
+
+[node name="VsyncCheck" type="CheckBox" parent="SettingsPanel/VBoxContainer/VideoSettings"]
+layout_mode = 2
+text = "Vsync"
+
+[node name="ControlsSettings" type="VBoxContainer" parent="SettingsPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="ControlsLabel" type="Label" parent="SettingsPanel/VBoxContainer/ControlsSettings"]
+layout_mode = 2
+text = "Bảng điều khiển"
+
+[node name="Buttons" type="HBoxContainer" parent="SettingsPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="ApplyButton" type="Button" parent="SettingsPanel/VBoxContainer/Buttons"]
+layout_mode = 2
+text = "Áp dụng"
+
+[node name="ResetButton" type="Button" parent="SettingsPanel/VBoxContainer/Buttons"]
+layout_mode = 2
+text = "Đặt lại"
+
+[node name="BackButton" type="Button" parent="SettingsPanel/VBoxContainer/Buttons"]
+layout_mode = 2
+text = "Thoát"
+
+[node name="LoadPanel" type="Panel" parent="."]
+visible = false
+custom_minimum_size = Vector2(100, 200)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_tbgi4")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="LoadPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -26.5
+offset_right = 26.5
+offset_bottom = 163.0
+grow_horizontal = 2
+
+[node name="TitleLabel" type="Label" parent="LoadPanel/VBoxContainer"]
+layout_mode = 2
+text = "Game đã lưu"
+horizontal_alignment = 1
+
+[node name="SaveSlotContainer" type="VBoxContainer" parent="LoadPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="LoadPanel/VBoxContainer/SaveSlotContainer"]
+layout_mode = 2
+
+[node name="SaveSlot1" type="Button" parent="LoadPanel/VBoxContainer/SaveSlotContainer/HBoxContainer"]
+layout_mode = 2
+text = "Lưu 1"
+
+[node name="Deletebutton" type="Button" parent="LoadPanel/VBoxContainer/SaveSlotContainer/HBoxContainer"]
+layout_mode = 2
+text = "Xóa"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="LoadPanel/VBoxContainer/SaveSlotContainer"]
+layout_mode = 2
+
+[node name="SaveSlot2" type="Button" parent="LoadPanel/VBoxContainer/SaveSlotContainer/HBoxContainer2"]
+layout_mode = 2
+text = "Lưu 2"
+
+[node name="Deletebutton" type="Button" parent="LoadPanel/VBoxContainer/SaveSlotContainer/HBoxContainer2"]
+layout_mode = 2
+text = "Xóa"
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="LoadPanel/VBoxContainer/SaveSlotContainer"]
+layout_mode = 2
+
+[node name="SaveSlot3" type="Button" parent="LoadPanel/VBoxContainer/SaveSlotContainer/HBoxContainer3"]
+layout_mode = 2
+text = "Lưu 3"
+
+[node name="Deletebutton" type="Button" parent="LoadPanel/VBoxContainer/SaveSlotContainer/HBoxContainer3"]
+layout_mode = 2
+text = "Xóa"
+
+[node name="BackButton" type="Button" parent="LoadPanel/VBoxContainer"]
+layout_mode = 2
+text = "Thoát"
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+
+[node name="ButtonHoverSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("4_tbgi4")
+pitch_scale = 0.8
+
+[node name="ButtonClickSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("4_jyhfs")
+
+[node name="BackgroundMusic" type="AudioStreamPlayer" parent="."]
