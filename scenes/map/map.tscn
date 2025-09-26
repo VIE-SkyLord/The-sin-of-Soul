@@ -168,8 +168,6 @@ position = Vector2(0, -64)
 
 [node name="LightArcher" parent="Enemy" instance=ExtResource("8_mrjnl")]
 position = Vector2(2184, -64)
-gravity = 980.0
-jump_force = 400.0
 
 [node name="SlashSword" parent="Enemy" instance=ExtResource("8_rqo2c")]
 position = Vector2(704, -64)
