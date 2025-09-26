@@ -1,0 +1,186 @@
+[gd_scene load_steps=17 format=3 uid="uid://c2nsfnq3ufkeq"]
+
+[ext_resource type="Texture2D" uid="uid://20g1dbshgtnt" path="res://assets/sprite/Boss/Mecha-stone Golem 0.1/PNG sheet/Character_sheet.png" id="3_rmsfu"]
+[ext_resource type="Texture2D" uid="uid://dp7b78s1imthr" path="res://assets/sprite/Boss/Mecha-stone Golem 0.1/weapon PNG/Laser_sheet.png" id="3_xpuh5"]
+[ext_resource type="AnimationLibrary" uid="uid://c5ckfu26xs7nq" path="res://assets/sprite/Boss/Mecha-stone Golem 0.1/boss_golem.res" id="11_rmsfu"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_rmsfu"]
+radius = 92.6124
+height = 505.173
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_rc8q6"]
+radius = 88.0
+height = 2078.0
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_cx52q"]
+radius = 184.0
+height = 368.0
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_8pk5i"]
+radius = 80.0
+height = 512.0
+
+[sub_resource type="Animation" id="Animation_vokql"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visual/Sprite2D:frame_coords")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [Vector2i(0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Visual/HeavyAttackArea/Sprite2D:frame_coords")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [Vector2i(0, 0)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Visual/HeavyAttackArea/Sprite2D:visible")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("HurtboxComponent:monitorable")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_5mr1s"]
+_data = {
+&"RESET": SubResource("Animation_vokql")
+}
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_rmsfu"]
+animation = &"boss_golem/armor_buff"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_rc8q6"]
+animation = &"boss_golem/die"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_vokql"]
+animation = &"boss_golem/idle"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_5mr1s"]
+animation = &"boss_golem/melee_attack"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_r3f2o"]
+animation = &"boss_golem/run"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_6qr3e"]
+animation = &"boss_golem/special_attack"
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_7ocnq"]
+states/armor_buff/node = SubResource("AnimationNodeAnimation_rmsfu")
+states/armor_buff/position = Vector2(384, 33)
+states/die/node = SubResource("AnimationNodeAnimation_rc8q6")
+states/die/position = Vector2(336, 79)
+states/idle/node = SubResource("AnimationNodeAnimation_vokql")
+states/idle/position = Vector2(336, 124)
+states/melee_attack/node = SubResource("AnimationNodeAnimation_5mr1s")
+states/melee_attack/position = Vector2(365, 173)
+states/run/node = SubResource("AnimationNodeAnimation_r3f2o")
+states/run/position = Vector2(310, 202)
+states/special_attack/node = SubResource("AnimationNodeAnimation_6qr3e")
+states/special_attack/position = Vector2(356, 251)
+graph_offset = Vector2(-80, 16)
+
+[node name="BossGolem" type="CharacterBody2D" groups=["Enemies"]]
+collision_layer = 2
+collision_mask = 21
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="LightAttackArea" type="Area2D" parent="Visual"]
+position = Vector2(136, 8)
+collision_layer = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Visual/LightAttackArea"]
+position = Vector2(88, 88)
+rotation = -0.66148
+shape = SubResource("CapsuleShape2D_rmsfu")
+
+[node name="HeavyAttackArea" type="Area2D" parent="Visual"]
+z_index = 1
+position = Vector2(16, -128)
+collision_layer = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Visual/HeavyAttackArea"]
+position = Vector2(938, -2)
+rotation = -1.5708
+shape = SubResource("CapsuleShape2D_rc8q6")
+
+[node name="Sprite2D" type="Sprite2D" parent="Visual/HeavyAttackArea"]
+visible = false
+position = Vector2(775, 132)
+scale = Vector2(8, 8)
+texture = ExtResource("3_xpuh5")
+vframes = 15
+
+[node name="Sprite2D" type="Sprite2D" parent="Visual"]
+texture_filter = 1
+scale = Vector2(8, 8)
+texture = ExtResource("3_rmsfu")
+hframes = 10
+vframes = 10
+
+[node name="AIController" type="Node2D" parent="."]
+
+[node name="HealthComponent" type="Node2D" parent="."]
+
+[node name="HurtboxComponent" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 0
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtboxComponent"]
+shape = SubResource("CapsuleShape2D_cx52q")
+debug_color = Color(0, 1, 0, 0.419608)
+
+[node name="PatrolComponent" type="Node2D" parent="."]
+
+[node name="VisionComponent" type="Node2D" parent="."]
+position = Vector2(17, -46)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 64)
+shape = SubResource("CapsuleShape2D_8pk5i")
+
+[node name="AttackComponent" type="Node2D" parent="."]
+
+[node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_5mr1s"),
+&"boss_golem": ExtResource("11_rmsfu")
+}
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+tree_root = SubResource("AnimationNodeStateMachine_7ocnq")
+advance_expression_base_node = NodePath("..")
+anim_player = NodePath("../AnimationPlayer")

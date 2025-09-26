@@ -1,0 +1,38 @@
+# Godot-specific ignores
+.godot/
+export_presets.cfg
+export_presets.cfg.import
+*.translation
+
+# Imported exports (ignore sample files for example, adjust as needed)
+# If you want to keep your exports in the repository, comment the next line
+exports/
+
+# Godot 4+ specific
+*.import/
+
+# Mono-specific (if you use Mono version of Godot)
+mono/
+.mono/
+data_*/
+
+# Build outputs
+build/
+bin/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files (uncomment if you use these IDEs)
+#.vs/
+#.vscode/
+#.idea/
+#*.sln
+#*.csproj
+#*.userprefs

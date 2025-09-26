@@ -1,0 +1,2 @@
+extends StatComponent
+class_name StaminaComponent

@@ -1,0 +1,170 @@
+[gd_scene load_steps=17 format=3 uid="uid://74p4wp64n7w"]
+
+[ext_resource type="Script" uid="uid://cfus8b3vqdag4" path="res://scripts/entity/camera.gd" id="1_6sljk"]
+[ext_resource type="Texture2D" uid="uid://c6v8vu3vv6chi" path="res://assets/sprite/GUI/Status/Ground.png" id="2_ajmi5"]
+[ext_resource type="Texture2D" uid="uid://cjxgxl55cnb7t" path="res://assets/sprite/GUI/Status/Spiritual_Power.png" id="3_h0fcc"]
+[ext_resource type="Script" uid="uid://6gwgapt6khv3" path="res://scripts/ui/soul_bar.gd" id="4_6sljk"]
+[ext_resource type="Texture2D" uid="uid://dqodp7xgofin" path="res://assets/sprite/GUI/Status/Health_Bar.png" id="4_pg0tu"]
+[ext_resource type="Texture2D" uid="uid://dnj8b2eh5cw5k" path="res://assets/sprite/GUI/Status/Health.png" id="5_6sljk"]
+[ext_resource type="Texture2D" uid="uid://ddgbqw8sywgtn" path="res://assets/sprite/GUI/Status/Stamina_Bar.png" id="6_wuvac"]
+[ext_resource type="Texture2D" uid="uid://cytqk0cptqk8r" path="res://assets/sprite/GUI/Status/Stamina.png" id="7_ur2ff"]
+[ext_resource type="Script" uid="uid://bnr4s2khsxqbp" path="res://scripts/ui/health_bar.gd" id="7_wuvac"]
+[ext_resource type="Texture2D" uid="uid://ynw176hubbub" path="res://assets/sprite/GUI/Status/Energy_empty.png" id="8_7tqvt"]
+[ext_resource type="Texture2D" uid="uid://1yeipu43bjvh" path="res://assets/sprite/GUI/Status/Energy_full.png" id="9_iyexg"]
+[ext_resource type="Texture2D" uid="uid://dugj60s00q5r7" path="res://assets/sprite/GUI/Status/Charm_Slot.png" id="10_317dp"]
+[ext_resource type="Script" uid="uid://ch3021lyfysdq" path="res://scripts/ui/stamina_bar.gd" id="10_ur2ff"]
+[ext_resource type="Texture2D" uid="uid://nk5neg0hr1qp" path="res://assets/sprite/GUI/Status/Healing_Potion.png" id="11_0l476"]
+[ext_resource type="Script" uid="uid://buwkn3xufyg42" path="res://scripts/ui/potion_display.gd" id="14_6sljk"]
+[ext_resource type="Texture2D" uid="uid://bmmf0gyd08kjm" path="res://assets/sprite/GUI/Status/Healing_Potion_Used.png" id="16_wuvac"]
+
+[node name="Camera2D" type="Camera2D"]
+script = ExtResource("1_6sljk")
+
+[node name="PlayerGUI" type="Control" parent="."]
+z_index = 2
+layout_mode = 3
+anchors_preset = 0
+offset_left = -584.0
+offset_top = -352.0
+offset_right = 1047.0
+offset_bottom = 165.0
+scale = Vector2(0.3, 0.3)
+metadata/_edit_use_anchors_ = true
+
+[node name="SoulBar" type="TextureProgressBar" parent="PlayerGUI"]
+layout_mode = 0
+offset_top = -17.0
+offset_right = 1398.0
+offset_bottom = 466.0
+value = 100.0
+fill_mode = 3
+texture_under = ExtResource("2_ajmi5")
+texture_progress = ExtResource("3_h0fcc")
+texture_progress_offset = Vector2(40, 140)
+script = ExtResource("4_6sljk")
+metadata/_edit_use_anchors_ = true
+
+[node name="HealthBar" type="TextureProgressBar" parent="PlayerGUI"]
+layout_mode = 0
+offset_left = 307.692
+offset_top = 199.744
+offset_right = 1397.69
+offset_bottom = 263.744
+value = 100.0
+texture_under = ExtResource("4_pg0tu")
+texture_progress = ExtResource("5_6sljk")
+script = ExtResource("7_wuvac")
+metadata/_edit_use_anchors_ = true
+
+[node name="StaminaBar" type="TextureProgressBar" parent="PlayerGUI"]
+layout_mode = 0
+offset_left = 313.846
+offset_top = 255.128
+offset_right = 986.846
+offset_bottom = 315.128
+value = 100.0
+texture_under = ExtResource("6_wuvac")
+texture_progress = ExtResource("7_ur2ff")
+script = ExtResource("10_ur2ff")
+metadata/_edit_use_anchors_ = true
+
+[node name="SkillBoss" type="TextureProgressBar" parent="PlayerGUI"]
+layout_mode = 0
+offset_left = -153.846
+offset_top = 270.769
+offset_right = 307.154
+offset_bottom = 729.769
+scale = Vector2(0.4, 0.4)
+value = 1.0
+fill_mode = 4
+texture_under = ExtResource("8_7tqvt")
+texture_progress = ExtResource("9_iyexg")
+texture_progress_offset = Vector2(5, 5)
+metadata/_edit_use_anchors_ = true
+
+[node name="SkillMons" type="TextureProgressBar" parent="PlayerGUI"]
+layout_mode = 0
+offset_left = 306.538
+offset_top = 330.0
+offset_right = 767.538
+offset_bottom = 789.0
+scale = Vector2(0.3, 0.3)
+value = 100.0
+fill_mode = 4
+texture_under = ExtResource("8_7tqvt")
+texture_progress = ExtResource("9_iyexg")
+texture_progress_offset = Vector2(5, 5)
+metadata/_edit_use_anchors_ = true
+
+[node name="SumSlot" type="TextureRect" parent="PlayerGUI"]
+layout_mode = 0
+offset_left = 320.0
+offset_top = 73.8462
+offset_right = 419.0
+offset_bottom = 180.846
+texture = ExtResource("10_317dp")
+metadata/_edit_use_anchors_ = true
+
+[node name="SumSlot2" type="TextureRect" parent="PlayerGUI"]
+layout_mode = 0
+offset_left = 455.385
+offset_top = 73.8462
+offset_right = 554.385
+offset_bottom = 180.846
+texture = ExtResource("10_317dp")
+metadata/_edit_use_anchors_ = true
+
+[node name="SumSlot3" type="TextureRect" parent="PlayerGUI"]
+layout_mode = 0
+offset_left = 590.769
+offset_top = 73.8462
+offset_right = 689.769
+offset_bottom = 180.846
+texture = ExtResource("10_317dp")
+metadata/_edit_use_anchors_ = true
+
+[node name="SumSlot4" type="TextureRect" parent="PlayerGUI"]
+layout_mode = 0
+offset_left = 726.154
+offset_top = 73.8462
+offset_right = 825.154
+offset_bottom = 180.846
+texture = ExtResource("10_317dp")
+metadata/_edit_use_anchors_ = true
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PlayerGUI"]
+custom_minimum_size = Vector2(500, 100)
+layout_mode = 0
+offset_left = 480.0
+offset_top = 346.667
+offset_right = 780.0
+offset_bottom = 446.667
+script = ExtResource("14_6sljk")
+full_potion_texture = ExtResource("11_0l476")
+empty_potion_texture = ExtResource("16_wuvac")
+cooldown_potion_texture = ExtResource("11_0l476")
+
+[node name="HealthPoition" type="TextureRect" parent="PlayerGUI/HBoxContainer" groups=["HealthPotion"]]
+layout_mode = 2
+texture = ExtResource("11_0l476")
+expand_mode = 3
+stretch_mode = 6
+metadata/_edit_use_anchors_ = true
+
+[node name="HealthPoition2" type="TextureRect" parent="PlayerGUI/HBoxContainer" groups=["HealthPotion"]]
+layout_mode = 2
+texture = ExtResource("11_0l476")
+expand_mode = 3
+stretch_mode = 6
+metadata/_edit_use_anchors_ = true
+
+[node name="HealthPoition3" type="TextureRect" parent="PlayerGUI/HBoxContainer" groups=["HealthPotion"]]
+layout_mode = 2
+texture = ExtResource("11_0l476")
+expand_mode = 3
+stretch_mode = 6
+metadata/_edit_use_anchors_ = true
+
+[node name="CooldownLabel" type="Label" parent="PlayerGUI/HBoxContainer"]
+layout_mode = 2
+text = "Hồi"

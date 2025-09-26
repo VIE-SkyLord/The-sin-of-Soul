@@ -1,0 +1,373 @@
+[gd_scene load_steps=31 format=3 uid="uid://bsewqn2dqo5dm"]
+
+[ext_resource type="Script" uid="uid://i11sgjxad4sq" path="res://scripts/entity/light_archer.gd" id="1_xbr8y"]
+[ext_resource type="Texture2D" uid="uid://b7rq0s7sq1umn" path="res://assets/sprite/Enemies/Light Archer/Arcane archer/spritesheet.png" id="3_85gtg"]
+[ext_resource type="Script" uid="uid://yhsnefd6rkt4" path="res://scripts/component/health_component.gd" id="3_ygedt"]
+[ext_resource type="Script" uid="uid://b7x3lshtlfsbi" path="res://scripts/component/hitbox_component.gd" id="4_dnp2c"]
+[ext_resource type="Script" uid="uid://d3efxkt0ffpo2" path="res://scripts/component/hurtbox_component.gd" id="5_ylc56"]
+[ext_resource type="Script" uid="uid://ctot45jlbuskl" path="res://scripts/component/vision_component.gd" id="6_nl570"]
+[ext_resource type="Script" uid="uid://vmbvglxspdsf" path="res://scripts/fsm/state_machine.gd" id="9_xmouh"]
+[ext_resource type="AudioStream" uid="uid://gsy2nawvs5gd" path="res://assets/sound/enemies/bow_release-light_archer.mp3" id="10_85gtg"]
+[ext_resource type="Script" uid="uid://6df82vfc8puw" path="res://scripts/fsm/slashsword/patrol_state.gd" id="10_hfy7v"]
+[ext_resource type="Script" uid="uid://c6u8vbnm8k8j5" path="res://scripts/fsm/slashsword/chase_state.gd" id="11_yukss"]
+[ext_resource type="Script" uid="uid://cwcg3nb6snqjr" path="res://scripts/fsm/slashsword/normal_attack_state.gd" id="12_xqdwu"]
+[ext_resource type="Script" uid="uid://bcnlrlg4pe5jp" path="res://scripts/fsm/slashsword/special_attack_state.gd" id="13_xgfdk"]
+[ext_resource type="Script" uid="uid://cpr0ilvayfgq1" path="res://scripts/fsm/slashsword/possessed_state.gd" id="14_dnp2c"]
+[ext_resource type="Script" uid="uid://cndveow1jh6ld" path="res://scripts/fsm/slashsword/death_state.gd" id="14_wp4pb"]
+[ext_resource type="Script" uid="uid://rvkqmywx4a1v" path="res://scripts/debug/target_finder.gd" id="14_xbr8y"]
+[ext_resource type="Script" uid="uid://frllk21jxjav" path="res://scripts/component/possessable_component.gd" id="15_ygedt"]
+
+[sub_resource type="SegmentShape2D" id="SegmentShape2D_kkigx"]
+a = Vector2(528, 0)
+b = Vector2(0, 0)
+
+[sub_resource type="SegmentShape2D" id="SegmentShape2D_85gtg"]
+a = Vector2(912, 0)
+b = Vector2(0, 0)
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_cx52q"]
+radius = 24.0
+height = 128.0
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_8pk5i"]
+radius = 24.0
+height = 128.0
+
+[sub_resource type="Animation" id="Animation_pde2j"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [8]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Sprite2D:frame_coords")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [Vector2i(0, 3)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_kkigx"]
+_data = {
+&"RESET": SubResource("Animation_pde2j")
+}
+
+[sub_resource type="Animation" id="Animation_85gtg"]
+length = 0.8
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.301304, 0.401304, 0.5, 0.6, 0.7),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [8, 9, 10, 11, 12, 13, 14, 15]
+}
+
+[sub_resource type="Animation" id="Animation_dnp2c"]
+length = 0.3
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [56, 57]
+}
+
+[sub_resource type="Animation" id="Animation_u0tcp"]
+length = 0.8
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.4, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [40, 41, 42, 43]
+}
+
+[sub_resource type="Animation" id="Animation_xbr8y"]
+length = 0.8
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.4, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [48, 49, 50, 51]
+}
+
+[sub_resource type="Animation" id="Animation_ygedt"]
+length = 0.8
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame_coords")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [Vector2i(0, 3), Vector2i(1, 3), Vector2i(2, 3), Vector2i(3, 3), Vector2i(4, 3), Vector2i(5, 3), Vector2i(6, 3)]
+}
+tracks/1/type = "audio"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("AudioStreamPlayer2D")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"clips": [{
+"end_offset": 0.0,
+"start_offset": 0.0,
+"stream": ExtResource("10_85gtg")
+}],
+"times": PackedFloat32Array(0.6)
+}
+tracks/1/use_blend = true
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.6, 0.8),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": [],
+"method": &"activate_light_attack"
+}, {
+"args": [],
+"method": &"deactivate_light_attack"
+}]
+}
+
+[sub_resource type="Animation" id="Animation_ktp5q"]
+length = 0.8
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame_coords")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0), Vector2i(5, 0), Vector2i(6, 0), Vector2i(7, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_ylc56"]
+length = 2.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame_coords")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3, 0.4, 0.5, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [Vector2i(0, 3), Vector2i(1, 3), Vector2i(2, 3), Vector2i(3, 3), Vector2i(4, 3), Vector2i(5, 3), Vector2i(6, 3), Vector2i(3, 3), Vector2i(4, 3), Vector2i(5, 3), Vector2i(6, 3), Vector2i(3, 3), Vector2i(4, 3), Vector2i(5, 3), Vector2i(6, 3)]
+}
+tracks/1/type = "audio"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("AudioStreamPlayer2D")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"clips": [{
+"end_offset": 0.0,
+"start_offset": 0.0,
+"stream": ExtResource("10_85gtg")
+}, {
+"end_offset": 0.0,
+"start_offset": 0.0,
+"stream": ExtResource("10_85gtg")
+}, {
+"end_offset": 0.0,
+"start_offset": 0.0,
+"stream": ExtResource("10_85gtg")
+}],
+"times": PackedFloat32Array(1, 1.4, 1.8)
+}
+tracks/1/use_blend = true
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(1, 1.2, 1.4, 1.6, 1.8, 2),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"values": [{
+"args": [],
+"method": &"activate_heavy_attack"
+}, {
+"args": [],
+"method": &"deactivate_heavy_attack"
+}, {
+"args": [],
+"method": &"activate_light_attack"
+}, {
+"args": [],
+"method": &"deactivate_light_attack"
+}, {
+"args": [],
+"method": &"activate_light_attack"
+}, {
+"args": [],
+"method": &"deactivate_light_attack"
+}]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_nl570"]
+_data = {
+&"die": SubResource("Animation_85gtg"),
+&"fall": SubResource("Animation_dnp2c"),
+&"idle": SubResource("Animation_u0tcp"),
+&"jump": SubResource("Animation_xbr8y"),
+&"normal_attack": SubResource("Animation_ygedt"),
+&"run": SubResource("Animation_ktp5q"),
+&"special_attack": SubResource("Animation_ylc56")
+}
+
+[node name="LightArcher" type="CharacterBody2D" groups=["Enemies"]]
+collision_layer = 2
+collision_mask = 21
+script = ExtResource("1_xbr8y")
+move_speed = 500.0
+patrol_range = 640.0
+attack_range = 640.0
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+scale = Vector2(3.6, 3.6)
+texture = ExtResource("3_85gtg")
+hframes = 8
+vframes = 8
+frame = 24
+
+[node name="HealthComponent" type="Node2D" parent="."]
+script = ExtResource("3_ygedt")
+max_value = 80.0
+
+[node name="LightAttackArea" type="Area2D" parent="."]
+position = Vector2(0, -22)
+collision_layer = 2
+script = ExtResource("4_dnp2c")
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="LightAttackArea"]
+visible = false
+polygon = PackedVector2Array(-5, -76, 27, -76, 99, -60, 123, -52, 139, -36, 147, -20, 147, 20, 131, 36, 107, 44, 35, 60, -61, 60, -69, 68, -117, 68, -117, 60, -61, 4, -45, 12, -21, 12, -21, 20, 27, 20, 27, 12, 43, 12, 75, 4, 91, -4, 99, -20, 91, -36, 59, -52, 35, -60, 11, -68, -5, -68)
+disabled = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LightAttackArea"]
+position = Vector2(112, 1)
+shape = SubResource("SegmentShape2D_kkigx")
+
+[node name="HeavyAttackArea" type="Area2D" parent="."]
+position = Vector2(0, -22)
+collision_layer = 2
+script = ExtResource("4_dnp2c")
+damage = 15
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="HeavyAttackArea"]
+visible = false
+polygon = PackedVector2Array(-48, -56, -24, -72, -8, -72, 24, -80, 104, -80, 136, -64, 152, -48, 176, -8, 176, 32, 168, 56, 160, 64, 64, 32, 88, 0, 72, -24, 32, -56)
+disabled = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HeavyAttackArea"]
+position = Vector2(112, 1)
+shape = SubResource("SegmentShape2D_85gtg")
+
+[node name="HurtboxComponent" type="Area2D" parent="."]
+visible = false
+collision_layer = 2
+script = ExtResource("5_ylc56")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtboxComponent"]
+shape = SubResource("CapsuleShape2D_cx52q")
+debug_color = Color(0, 1, 0, 0.419608)
+
+[node name="VisionRayCast" type="RayCast2D" parent="."]
+position = Vector2(0, -40)
+target_position = Vector2(1024, 0)
+script = ExtResource("6_nl570")
+vision_distance = 1024.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_8pk5i")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_kkigx"),
+&"light_archer": SubResource("AnimationLibrary_nl570")
+}
+
+[node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
+
+[node name="StateMachine" type="Node" parent="."]
+script = ExtResource("9_xmouh")
+initial_state_path = NodePath("PatrolState")
+
+[node name="PatrolState" type="Node" parent="StateMachine"]
+script = ExtResource("10_hfy7v")
+
+[node name="ChaseState" type="Node" parent="StateMachine"]
+script = ExtResource("11_yukss")
+
+[node name="NormalAttackState" type="Node" parent="StateMachine"]
+script = ExtResource("12_xqdwu")
+
+[node name="SpecialAttackState" type="Node" parent="StateMachine"]
+script = ExtResource("13_xgfdk")
+
+[node name="DeathState" type="Node" parent="StateMachine"]
+script = ExtResource("14_wp4pb")
+
+[node name="PossessedState" type="Node" parent="StateMachine"]
+script = ExtResource("14_dnp2c")
+
+[node name="TargetFinder" type="Node" parent="."]
+script = ExtResource("14_xbr8y")
+
+[node name="PossessableComponent" type="Node" parent="."]
+script = ExtResource("15_ygedt")
+health_threshold = 1.0

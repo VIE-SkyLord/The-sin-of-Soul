@@ -1,0 +1,79 @@
+[gd_resource type="AnimationNodeStateMachine" load_steps=16 format=3 uid="uid://bym68oaoi0hq1"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_fgsbk"]
+animation = &"dash_left"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_6ddi4"]
+animation = &"dash_right"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_jptrm"]
+blend_point_0/node = SubResource("AnimationNodeAnimation_fgsbk")
+blend_point_0/pos = -1.0
+blend_point_1/node = SubResource("AnimationNodeAnimation_6ddi4")
+blend_point_1/pos = 1.0
+blend_mode = 1
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_1j510"]
+animation = &"fall_left"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_i0kcq"]
+animation = &"fall_right"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_rqwn8"]
+blend_point_0/node = SubResource("AnimationNodeAnimation_1j510")
+blend_point_0/pos = -1.0
+blend_point_1/node = SubResource("AnimationNodeAnimation_i0kcq")
+blend_point_1/pos = 1.0
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_jptrm"]
+animation = &"idle_left"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_bwvg1"]
+animation = &"idle_right"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_1j510"]
+blend_point_0/node = SubResource("AnimationNodeAnimation_jptrm")
+blend_point_0/pos = -1.0
+blend_point_1/node = SubResource("AnimationNodeAnimation_bwvg1")
+blend_point_1/pos = 1.0
+blend_mode = 1
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_h80y5"]
+animation = &"jump_left"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_bcygj"]
+animation = &"jump_right"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_i0kcq"]
+blend_point_0/node = SubResource("AnimationNodeAnimation_h80y5")
+blend_point_0/pos = -1.0
+blend_point_1/node = SubResource("AnimationNodeAnimation_bcygj")
+blend_point_1/pos = 1.0
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_pa86b"]
+animation = &"run_left"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8xfin"]
+animation = &"run_right"
+
+[sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_fgsbk"]
+blend_point_0/node = SubResource("AnimationNodeAnimation_pa86b")
+blend_point_0/pos = -1.0
+blend_point_1/node = SubResource("AnimationNodeAnimation_8xfin")
+blend_point_1/pos = 1.0
+value_label = ""
+blend_mode = 1
+
+[resource]
+states/Start/position = Vector2(210, 100)
+states/dash/node = SubResource("AnimationNodeBlendSpace1D_jptrm")
+states/dash/position = Vector2(454, 95)
+states/fall/node = SubResource("AnimationNodeBlendSpace1D_rqwn8")
+states/fall/position = Vector2(210, -7)
+states/idle/node = SubResource("AnimationNodeBlendSpace1D_1j510")
+states/idle/position = Vector2(316, 96)
+states/jump/node = SubResource("AnimationNodeBlendSpace1D_i0kcq")
+states/jump/position = Vector2(328, -7)
+states/run/node = SubResource("AnimationNodeBlendSpace1D_fgsbk")
+states/run/position = Vector2(454, -7)
+graph_offset = Vector2(-121, -153)

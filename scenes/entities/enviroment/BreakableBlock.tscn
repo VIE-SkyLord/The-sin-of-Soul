@@ -1,0 +1,31 @@
+[gd_scene load_steps=5 format=3 uid="uid://bxb6l4jx4v0to"]
+
+[ext_resource type="Script" path="res://code/map/BreakableGrassBlock.cs" id="1_nplfk"]
+[ext_resource type="Texture2D" uid="uid://cf0oa8axdge7e" path="res://assets/Mossy Tileset/Mossy - FloatingPlatforms.png" id="2_4pgut"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_y3wfe"]
+size = Vector2(672, 152)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_nplfk"]
+size = Vector2(672, 16)
+
+[node name="BreakableGrassBlock" type="StaticBody2D"]
+collision_layer = 4
+script = ExtResource("1_nplfk")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(-4.50012, 0)
+scale = Vector2(0.800595, 0.8)
+texture = ExtResource("2_4pgut")
+region_enabled = true
+region_rect = Rect2(512, 552, 1008, 400)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-1.50012, 0)
+shape = SubResource("RectangleShape2D_y3wfe")
+
+[node name="DetectionArea" type="Area2D" parent="."]
+position = Vector2(-1.50012, -84)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectionArea"]
+shape = SubResource("RectangleShape2D_nplfk")

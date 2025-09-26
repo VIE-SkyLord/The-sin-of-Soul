@@ -1,0 +1,44 @@
+{
+    "player": {
+        "speed": 500.0,
+        "jumpVelocity": -700.0,
+        "gravity": 980.0,
+        "dashSpeed": 1000.0,
+        "dashDuration": 0.2,
+        "dashCooldown": 1.0,
+        "maxJumps": 2,
+        "maxDashes": 2,
+        "maxSoulHP": 100,
+        "maxSoulMP": 100,
+        "maxSoulSP": 100,
+        "recMpPerSec": 1,
+        "recSpPerSec": 1
+    },
+    "enemies": {
+        "skeleton": {
+            "maxHealth": 100,
+            "speed": 300.0,
+            "attackDamage": 25,
+            "attackRange": 100.0,
+            "detectionRange": 640.0,
+            "possessionThreshold": 0.3
+        },
+        "archer": {
+            "maxHealth": 80,
+            "speed": 350.0,
+            "attackDamage": 20,
+            "attackRange": 500.0,
+            "detectionRange": 800.0,
+            "possessionThreshold": 0.3
+        }
+    },
+    "game": {
+        "difficultyMultiplier": 1.0,
+        "experienceMultiplier": 1.0,
+        "lootDropRate": 1.0,
+        "summonCosts": [20, 30, 40, 50, 60, 70],
+        "maxHealthPotions": 3,
+        "healthPotionHealAmount": 50,
+        "healthPotionCooldown": 5.0
+    }
+}

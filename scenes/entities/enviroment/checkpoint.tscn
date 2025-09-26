@@ -1,0 +1,165 @@
+[gd_scene load_steps=16 format=3 uid="uid://dtgh74ljt6qfv"]
+
+[ext_resource type="Texture2D" uid="uid://1swstoquo5av" path="res://assets/sprite/CheckPoint.png" id="1_luqgl"]
+[ext_resource type="Script" path="res://code/Checkpoint.cs" id="1_ywqth"]
+[ext_resource type="AudioStream" uid="uid://c5x83875xj2h6" path="res://assets/sound/bell_checkpoint.mp3" id="3_vsimk"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_r6hke"]
+radius = 64.0
+height = 288.0
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_tnhlw"]
+atlas = ExtResource("1_luqgl")
+region = Rect2(0, 46, 295, 297)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_s20m7"]
+atlas = ExtResource("1_luqgl")
+region = Rect2(295, 46, 295, 297)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_q25r3"]
+atlas = ExtResource("1_luqgl")
+region = Rect2(590, 46, 295, 297)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4eun3"]
+atlas = ExtResource("1_luqgl")
+region = Rect2(885, 46, 295, 297)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7dqgm"]
+atlas = ExtResource("1_luqgl")
+region = Rect2(1180, 46, 295, 297)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_plj7t"]
+atlas = ExtResource("1_luqgl")
+region = Rect2(1475, 46, 295, 297)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dtr31"]
+atlas = ExtResource("1_luqgl")
+region = Rect2(1770, 46, 295, 297)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_nni48"]
+atlas = ExtResource("1_luqgl")
+region = Rect2(2065, 46, 295, 297)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_45wyy"]
+atlas = ExtResource("1_luqgl")
+region = Rect2(2360, 46, 295, 297)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ywqth"]
+atlas = ExtResource("1_luqgl")
+region = Rect2(0, 46, 295, 296)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_5hpic"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tnhlw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_s20m7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_q25r3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4eun3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7dqgm")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7dqgm")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_plj7t")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dtr31")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_nni48")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_45wyy")
+}],
+"loop": true,
+"name": &"activate_animation",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tnhlw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_s20m7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_q25r3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4eun3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7dqgm")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7dqgm")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_plj7t")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dtr31")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_nni48")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_45wyy")
+}],
+"loop": true,
+"name": &"activated",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tnhlw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_s20m7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_q25r3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4eun3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7dqgm")
+}],
+"loop": false,
+"name": &"highlight",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ywqth")
+}],
+"loop": false,
+"name": &"idle",
+"speed": 5.0
+}]
+
+[node name="Checkpoint" type="Area2D"]
+script = ExtResource("1_ywqth")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_r6hke")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+z_index = -1
+sprite_frames = SubResource("SpriteFrames_5hpic")
+animation = &"activate_animation"
+autoplay = "idle"
+
+[node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("3_vsimk")

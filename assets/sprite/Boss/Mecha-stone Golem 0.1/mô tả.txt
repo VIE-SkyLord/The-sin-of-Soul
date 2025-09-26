@@ -1,0 +1,11 @@
+boss_golem
+health:1800
+speed:50
+jump:0
+state animation tree:
+armor_buff: hoạt ảnh + on/off monitorable hurtbox
+die
+idle
+mellee_attack: hoạt ảnh + hitbox
+special_attcak: hoạt ảnh vận sức, sau đó area gồm hoạt ảnh laser + hitbox rotaion hướng về mục tiêu
+run

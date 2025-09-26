@@ -1,0 +1,43 @@
+[gd_resource type="AnimationNodeStateMachine" load_steps=9 format=3 uid="uid://6s54t0ox8tnx"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_pde2j"]
+animation = &"light_archer/die"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_kkigx"]
+animation = &"light_archer/fall"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_85gtg"]
+animation = &"light_archer/idle"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_u0tcp"]
+animation = &"light_archer/jump"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ktp5q"]
+animation = &"light_archer/normal_attack"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_xbr8y"]
+animation = &"light_archer/run"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ygedt"]
+animation = &"light_archer/special_attack"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_vs7gl"]
+advance_mode = 2
+
+[resource]
+states/die/node = SubResource("AnimationNodeAnimation_pde2j")
+states/die/position = Vector2(386, -73)
+states/fall/node = SubResource("AnimationNodeAnimation_kkigx")
+states/fall/position = Vector2(386, 3)
+states/idle/node = SubResource("AnimationNodeAnimation_85gtg")
+states/idle/position = Vector2(386, 100)
+states/jump/node = SubResource("AnimationNodeAnimation_u0tcp")
+states/jump/position = Vector2(386, 50)
+states/normal_attack/node = SubResource("AnimationNodeAnimation_ktp5q")
+states/normal_attack/position = Vector2(396, 154)
+states/run/node = SubResource("AnimationNodeAnimation_xbr8y")
+states/run/position = Vector2(386, 211)
+states/special_attack/node = SubResource("AnimationNodeAnimation_ygedt")
+states/special_attack/position = Vector2(386, 270)
+transitions = ["Start", "idle", SubResource("AnimationNodeStateMachineTransition_vs7gl")]
+graph_offset = Vector2(-70, -79)
