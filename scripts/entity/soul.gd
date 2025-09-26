@@ -86,4 +86,13 @@ func upgrade_max_potions(new_max: int) -> void:
 
 func _on_interact_area_body_entered(body: Node2D) -> void:
 	if body.is_in_group("PotionPickup"):
-		pass
+		if possession_manager.current_body:
+			# Route potion pickup to soul's PotionComponent during possession
+			if potion_component:
+				potion_component.add_potion(1)
+				body.queue_free()  # Remove potion pickup
+		else:
+			# Normal soul pickup
+			if potion_component:
+				potion_component.add_potion(1)
+				body.queue_free()  # Remove potion pickup
