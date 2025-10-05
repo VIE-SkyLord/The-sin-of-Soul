@@ -270,7 +270,7 @@ _data = {
 
 [node name="LightArcher" type="CharacterBody2D" groups=["Enemies"]]
 collision_layer = 2
-collision_mask = 21
+collision_mask = 5
 script = ExtResource("1_xbr8y")
 move_speed = 500.0
 patrol_range = 640.0

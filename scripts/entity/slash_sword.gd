@@ -34,8 +34,16 @@ func _physics_process(delta):
 	move_and_slide()  # Let state machine handle velocity.x
 
 func _on_took_damage(amount: int):
-	if possession_manager.current_body == self and health_component.current_value <= 0:
-		possession_manager.unpossess(true)
+	# Trừ HP trước
+	if health_component:
+		health_component.change(-amount)
+		print(name, " took damage: ", amount, " | HP: ", health_component.current_value, "/", health_component.max_value)
+	
+	# Kiểm tra nếu đang bị nhập và chết thì tự động thoát nhập
+	var possession_mgr = get_tree().get_first_node_in_group("PossessionManager")
+	if possession_mgr and possession_mgr.current_body == self:
+		if health_component and health_component.current_value <= 0:
+			possession_mgr.unpossess(true)
 
 func _on_died():
 	if "DeathState" in state_machine.states:

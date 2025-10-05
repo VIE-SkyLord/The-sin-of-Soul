@@ -24,6 +24,7 @@ func _ready() -> void:
 		var soul_hurtbox = soul.get_node("HurtboxComponent")
 		soul_hurtbox_original_layer = soul_hurtbox.collision_layer
 		soul_hurtbox_original_mask = soul_hurtbox.collision_mask
+		print("Soul Hurtbox - Layer: ", soul_hurtbox_original_layer, " Mask: ", soul_hurtbox_original_mask)
 
 func _process(delta: float) -> void:
 	if current_body:
@@ -43,23 +44,47 @@ func can_possess(target: Node2D) -> bool:
 func possess(target: Node2D) -> void:
 	if current_body or not can_possess(target): return
 	current_body = target
+	
+	# Lưu collision ban đầu của xác
 	body_original_layer = target.collision_layer
 	body_original_mask = target.collision_mask
+	
+	# Lưu hurtbox ban đầu của xác
 	if target.has_node("HurtboxComponent"):
 		var hurtbox = target.get_node("HurtboxComponent")
 		body_hurtbox_original_layer = hurtbox.collision_layer
 		body_hurtbox_original_mask = hurtbox.collision_mask
-		hurtbox.set_deferred("monitoring", false)
-	target.collision_layer = soul_original_layer
-	target.collision_mask = soul_original_mask
+		
+		# CẤU HÌNH HURTBOX CỦA XÁC KHI NHẬP
+		# Layer 1 (Player) - để các kẻ địch biết đây là Player
+		# Mask 2 (Enemies) - để NHẬN damage từ Enemy attacks (layer 2)
+		hurtbox.collision_layer = 1  # Player layer
+		hurtbox.collision_mask = 2   # Enemies layer - QUAN TRỌNG!
+		print("Possessed Body Hurtbox - Layer: 1 (Player), Mask: 2 (Enemies)")
+	
+	# Set collision cho xác
+	target.collision_layer = soul_original_layer  # Layer 1 (Player)
+	target.collision_mask = soul_original_mask    # Mask 2 (Enemies)
+	
+	# CẤU HÌNH ATTACK AREAS CỦA XÁC
+	# Attack areas GÂY damage cho Enemies
 	if target.has_node("LightAttackArea"):
-		target.get_node("LightAttackArea").collision_mask = 2
+		var light_attack = target.get_node("LightAttackArea")
+		light_attack.collision_layer = 1  # Player layer
+		light_attack.collision_mask = 2   # Target Enemies layer
+		print("Light Attack - Layer: 1, Mask: 2")
+		
 	if target.has_node("HeavyAttackArea"):
-		target.get_node("HeavyAttackArea").collision_mask = 2
+		var heavy_attack = target.get_node("HeavyAttackArea")
+		heavy_attack.collision_layer = 1  # Player layer
+		heavy_attack.collision_mask = 2   # Target Enemies layer
+		print("Heavy Attack - Layer: 1, Mask: 2")
+	
+	# Tắt hurtbox của Soul
 	if soul.has_node("HurtboxComponent"):
 		soul.get_node("HurtboxComponent").set_deferred("monitoring", false)
 	
-	# XÓA Soul và tất cả node con khỏi group Player
+	# Xóa Soul và tất cả node con khỏi group Player
 	soul.remove_from_group("Player")
 	for child in soul.get_children():
 		if child.is_in_group("Player"):
@@ -75,18 +100,20 @@ func possess(target: Node2D) -> void:
 	# Thêm xác vào group Player
 	target.add_to_group("Player")
 	
+	# Ẩn Soul
 	soul.collision_layer = 0
 	soul.collision_mask = 0
 	soul.visible = false
 	soul.global_position = target.global_position
 	soul.set_physics_process(false)
 	
+	# Chuyển sang PossessedState
 	if target.has_node("StateMachine"):
 		var sm = target.get_node("StateMachine")
 		if "PossessedState" in sm.states:
 			sm.set_current_state(sm.states["PossessedState"])
 	
-	# ĐỒng bộ % máu từ Soul sang xác
+	# Đồng bộ % máu từ Soul sang xác
 	sync_health_to_body(target)
 	
 	# Chuyển PotionComponent sang sử dụng HealthComponent của xác
@@ -95,6 +122,9 @@ func possess(target: Node2D) -> void:
 		print("PotionComponent now healing body: ", target.name)
 	
 	soul.on_possess(target)
+	
+	# CẬP NHẬT TARGET cho TẤT CẢ kẻ địch: target xác thay vì Soul
+	update_all_enemies_target(target)
 	
 	# Set camera trước khi emit signal
 	var camera = get_tree().get_first_node_in_group("camera")
@@ -133,6 +163,8 @@ func unpossess(force: bool = false) -> void:
 		var health = current_body.get_node("HealthComponent")
 		if health.current_value <= 0:
 			current_body.queue_free()
+	
+	# Khôi phục collision của Soul
 	soul.collision_layer = soul_original_layer
 	soul.collision_mask = soul_original_mask
 	if soul.has_node("HurtboxComponent"):
@@ -140,17 +172,33 @@ func unpossess(force: bool = false) -> void:
 		soul_hurtbox.set_deferred("monitoring", true)
 		soul_hurtbox.collision_layer = soul_hurtbox_original_layer
 		soul_hurtbox.collision_mask = soul_hurtbox_original_mask
+		print("Soul Hurtbox restored - Layer: ", soul_hurtbox_original_layer, " Mask: ", soul_hurtbox_original_mask)
+	
+	# Khôi phục collision của xác
 	current_body.collision_layer = body_original_layer
 	current_body.collision_mask = body_original_mask
+	
+	# Khôi phục hurtbox của xác
 	if current_body.has_node("HurtboxComponent"):
 		var hurtbox = current_body.get_node("HurtboxComponent")
 		hurtbox.set_deferred("monitoring", true)
 		hurtbox.collision_layer = body_hurtbox_original_layer
 		hurtbox.collision_mask = body_hurtbox_original_mask
+		print("Body Hurtbox restored - Layer: ", body_hurtbox_original_layer, " Mask: ", body_hurtbox_original_mask)
+	
+	# Khôi phục attack areas của xác về tấn công Player (layer 1)
 	if current_body.has_node("LightAttackArea"):
-		current_body.get_node("LightAttackArea").collision_mask = 1
+		var light_attack = current_body.get_node("LightAttackArea")
+		light_attack.collision_layer = 2  # Enemy layer
+		light_attack.collision_mask = 1   # Target Player layer
+		print("Body Light Attack restored - Layer: 2, Mask: 1")
+		
 	if current_body.has_node("HeavyAttackArea"):
-		current_body.get_node("HeavyAttackArea").collision_mask = 1
+		var heavy_attack = current_body.get_node("HeavyAttackArea")
+		heavy_attack.collision_layer = 2  # Enemy layer
+		heavy_attack.collision_mask = 1   # Target Player layer
+		print("Body Heavy Attack restored - Layer: 2, Mask: 1")
+	
 	# Chuyển xác về Enemy và Soul về Player
 	if current_body.is_in_group("Player"):
 		current_body.remove_from_group("Player")
@@ -166,6 +214,9 @@ func unpossess(force: bool = false) -> void:
 	if current_body.has_node("StateMachine"):
 		current_body.get_node("StateMachine").on_transition_requested("PatrolState")
 	soul.on_unpossess()
+	
+	# CẬP NHẬT TARGET cho TẤT CẢ kẻ địch: target Soul thay vì xác cũ
+	update_all_enemies_target(soul)
 	
 	# Trả camera về Soul
 	var camera = get_tree().get_first_node_in_group("camera")
@@ -209,3 +260,11 @@ func _input(event: InputEvent) -> void:
 			var target = soul.interact_area.get_overlapping_bodies()[0]
 			if target.is_in_group("Enemies"):
 				possess(target)
+
+func update_all_enemies_target(new_target: Node2D) -> void:
+	"""Cập nhật target cho tất cả kẻ địch trong scene"""
+	var enemies = get_tree().get_nodes_in_group("Enemies")
+	for enemy in enemies:
+		if enemy.has_method("set_target"):
+			enemy.set_target(new_target)
+			print("Updated enemy ", enemy.name, " target to ", new_target.name)
