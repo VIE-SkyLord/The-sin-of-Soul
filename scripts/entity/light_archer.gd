@@ -92,6 +92,12 @@ func play_run_animation() -> void:
 	else:
 		print("LightArcher: Missing run animation")
 
+func play_death_animation() -> void:
+	if animation_player.has_animation("light_archer/die"):
+		animation_player.play("light_archer/die")
+	else:
+		print("LightArcher: Missing die animation")
+
 func trigger_normal_attack() -> void:
 	if animation_player.has_animation("light_archer/normal_attack"):
 		animation_player.play("light_archer/normal_attack")

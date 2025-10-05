@@ -92,6 +92,12 @@ func play_run_animation() -> void:
 	else:
 		print("SlashSword: Missing run animation")
 
+func play_death_animation() -> void:
+	if animation_player.has_animation("slash_sword/die"):
+		animation_player.play("slash_sword/die")
+	else:
+		print("SlashSword: Missing die animation")
+
 func trigger_normal_attack() -> void:
 	if animation_player.has_animation("slash_sword/normal_attack"):
 		animation_player.play("slash_sword/normal_attack")
