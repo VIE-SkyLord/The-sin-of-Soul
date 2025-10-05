@@ -17,6 +17,7 @@ var is_facing_right: bool = true
 
 var can_dash: bool = true
 var current_animation: String = ""
+var possessed_body: Node2D = null
 
 func _ready() -> void:
 	add_to_group("Player")
@@ -40,11 +41,14 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("possess") and interact_area.get_overlapping_bodies().size() > 0:
 		var target = interact_area.get_overlapping_bodies()[0]
 		if target.is_in_group("Enemies"):
-			possession_manager.possess(target)
+			var possession_mgr = get_tree().get_first_node_in_group("PossessionManager")
+			if possession_mgr:
+				possession_mgr.possess(target)
 
 func _on_took_damage(amount: int) -> void:
 	print("Soul took damage: ", amount)
-	if health_component:
+	# Chỉ giảm máu của Soul nếu không nhập xác
+	if health_component and not possessed_body:
 		health_component.change(-amount)
 
 func _handle_potion_input() -> void:
@@ -85,5 +89,16 @@ func upgrade_max_potions(new_max: int) -> void:
 		potion_component.upgrade_max_potions(new_max)
 
 func _on_interact_area_body_entered(body: Node2D) -> void:
-	if body.is_in_group("PotionPickup"):
-		pass
+	# InteractArea chỉ dùng để kiểm tra có thể nhập xác
+	# Không xử lý pickup ở đây vì potion_pickup.gd tự xử lý
+	pass
+
+# Gọi bởi PossessionManager khi nhập xác
+func on_possess(target: Node2D) -> void:
+	possessed_body = target
+	print("Soul possessed: ", target.name)
+
+# Gọi bởi PossessionManager khi thoát nhập xác
+func on_unpossess() -> void:
+	print("Soul unpossessed from: ", possessed_body.name if possessed_body else "unknown")
+	possessed_body = null
