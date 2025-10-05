@@ -20,151 +20,228 @@
 [node name="Camera2D" type="Camera2D"]
 script = ExtResource("1_6sljk")
 
-[node name="PlayerGUI" type="Control" parent="."]
-z_index = 2
-layout_mode = 3
-anchors_preset = 0
-offset_left = -584.0
-offset_top = -352.0
-offset_right = 1047.0
-offset_bottom = 165.0
-scale = Vector2(0.3, 0.3)
-metadata/_edit_use_anchors_ = true
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="SoulBar" type="TextureProgressBar" parent="PlayerGUI"]
-layout_mode = 0
-offset_top = -17.0
-offset_right = 1398.0
-offset_bottom = 466.0
+[node name="PlayerGUI" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 33.0
+offset_top = -1.0
+offset_right = 33.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="StatusContainer" type="Control" parent="CanvasLayer/PlayerGUI"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -720.0
+offset_right = 480.0
+offset_bottom = -540.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="SoulBar" type="TextureProgressBar" parent="CanvasLayer/PlayerGUI/StatusContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 64.0
+offset_top = 5.0
+offset_right = 977.0
+offset_bottom = 290.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.3, 0.3)
 value = 100.0
 fill_mode = 3
 texture_under = ExtResource("2_ajmi5")
 texture_progress = ExtResource("3_h0fcc")
 texture_progress_offset = Vector2(40, 140)
 script = ExtResource("4_6sljk")
-metadata/_edit_use_anchors_ = true
 
-[node name="HealthBar" type="TextureProgressBar" parent="PlayerGUI"]
-layout_mode = 0
-offset_left = 307.692
-offset_top = 199.744
-offset_right = 1397.69
-offset_bottom = 263.744
+[node name="HealthBar" type="TextureProgressBar" parent="CanvasLayer/PlayerGUI/StatusContainer"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 152.0
+offset_top = -110.0
+offset_right = 762.0
+offset_bottom = -53.0
+grow_horizontal = 2
+grow_vertical = 0
+scale = Vector2(0.3, 0.3)
 value = 100.0
 texture_under = ExtResource("4_pg0tu")
 texture_progress = ExtResource("5_6sljk")
 script = ExtResource("7_wuvac")
-metadata/_edit_use_anchors_ = true
 
-[node name="StaminaBar" type="TextureProgressBar" parent="PlayerGUI"]
-layout_mode = 0
-offset_left = 313.846
-offset_top = 255.128
-offset_right = 986.846
-offset_bottom = 315.128
+[node name="StaminaBar" type="TextureProgressBar" parent="CanvasLayer/PlayerGUI/StatusContainer"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 154.0
+offset_top = -93.0
+offset_right = 347.0
+offset_bottom = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+scale = Vector2(0.3, 0.3)
 value = 100.0
 texture_under = ExtResource("6_wuvac")
 texture_progress = ExtResource("7_ur2ff")
 script = ExtResource("10_ur2ff")
-metadata/_edit_use_anchors_ = true
 
-[node name="SkillBoss" type="TextureProgressBar" parent="PlayerGUI"]
-layout_mode = 0
-offset_left = -153.846
-offset_top = 270.769
-offset_right = 307.154
-offset_bottom = 729.769
-scale = Vector2(0.4, 0.4)
+[node name="SkillsContainer" type="Control" parent="CanvasLayer/PlayerGUI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -1314.0
+offset_top = -653.0
+offset_right = -1114.0
+offset_bottom = -543.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="SkillBoss" type="TextureProgressBar" parent="CanvasLayer/PlayerGUI/SkillsContainer"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -257.0
+offset_top = -238.0
+offset_right = 204.0
+offset_bottom = 221.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.15, 0.15)
+pivot_offset = Vector2(230, 230)
 value = 1.0
 fill_mode = 4
 texture_under = ExtResource("8_7tqvt")
 texture_progress = ExtResource("9_iyexg")
 texture_progress_offset = Vector2(5, 5)
-metadata/_edit_use_anchors_ = true
 
-[node name="SkillMons" type="TextureProgressBar" parent="PlayerGUI"]
-layout_mode = 0
-offset_left = 306.538
-offset_top = 330.0
-offset_right = 767.538
-offset_bottom = 789.0
-scale = Vector2(0.3, 0.3)
+[node name="SkillMons" type="TextureProgressBar" parent="CanvasLayer/PlayerGUI/SkillsContainer"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = -223.0
+offset_right = 341.0
+offset_bottom = 236.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.1, 0.1)
+pivot_offset = Vector2(230, 230)
 value = 100.0
 fill_mode = 4
 texture_under = ExtResource("8_7tqvt")
 texture_progress = ExtResource("9_iyexg")
 texture_progress_offset = Vector2(5, 5)
-metadata/_edit_use_anchors_ = true
 
-[node name="SumSlot" type="TextureRect" parent="PlayerGUI"]
-layout_mode = 0
-offset_left = 320.0
-offset_top = 73.8462
-offset_right = 419.0
-offset_bottom = 180.846
+[node name="CharmsContainer" type="HBoxContainer" parent="CanvasLayer/PlayerGUI"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -482.0
+offset_top = 28.0
+offset_right = -42.0
+offset_bottom = 68.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="SumSlot" type="TextureRect" parent="CanvasLayer/PlayerGUI/CharmsContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
 texture = ExtResource("10_317dp")
-metadata/_edit_use_anchors_ = true
+expand_mode = 1
+stretch_mode = 5
 
-[node name="SumSlot2" type="TextureRect" parent="PlayerGUI"]
-layout_mode = 0
-offset_left = 455.385
-offset_top = 73.8462
-offset_right = 554.385
-offset_bottom = 180.846
+[node name="SumSlot2" type="TextureRect" parent="CanvasLayer/PlayerGUI/CharmsContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
 texture = ExtResource("10_317dp")
-metadata/_edit_use_anchors_ = true
+expand_mode = 1
+stretch_mode = 5
 
-[node name="SumSlot3" type="TextureRect" parent="PlayerGUI"]
-layout_mode = 0
-offset_left = 590.769
-offset_top = 73.8462
-offset_right = 689.769
-offset_bottom = 180.846
+[node name="SumSlot3" type="TextureRect" parent="CanvasLayer/PlayerGUI/CharmsContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
 texture = ExtResource("10_317dp")
-metadata/_edit_use_anchors_ = true
+expand_mode = 1
+stretch_mode = 5
 
-[node name="SumSlot4" type="TextureRect" parent="PlayerGUI"]
-layout_mode = 0
-offset_left = 726.154
-offset_top = 73.8462
-offset_right = 825.154
-offset_bottom = 180.846
+[node name="SumSlot4" type="TextureRect" parent="CanvasLayer/PlayerGUI/CharmsContainer"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
 texture = ExtResource("10_317dp")
-metadata/_edit_use_anchors_ = true
+expand_mode = 1
+stretch_mode = 5
 
-[node name="HBoxContainer" type="HBoxContainer" parent="PlayerGUI"]
-custom_minimum_size = Vector2(500, 100)
-layout_mode = 0
-offset_left = 480.0
-offset_top = 346.667
-offset_right = 780.0
-offset_bottom = 446.667
+[node name="PotionsContainer" type="Control" parent="CanvasLayer/PlayerGUI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -1077.0
+offset_top = -610.0
+offset_right = -917.0
+offset_bottom = -570.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/PlayerGUI/PotionsContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("14_6sljk")
 full_potion_texture = ExtResource("11_0l476")
 empty_potion_texture = ExtResource("16_wuvac")
 cooldown_potion_texture = ExtResource("11_0l476")
 
-[node name="HealthPoition" type="TextureRect" parent="PlayerGUI/HBoxContainer" groups=["HealthPotion"]]
+[node name="HealthPoition" type="TextureRect" parent="CanvasLayer/PlayerGUI/PotionsContainer/HBoxContainer" groups=["HealthPotion"]]
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 texture = ExtResource("11_0l476")
-expand_mode = 3
-stretch_mode = 6
-metadata/_edit_use_anchors_ = true
+expand_mode = 1
+stretch_mode = 5
 
-[node name="HealthPoition2" type="TextureRect" parent="PlayerGUI/HBoxContainer" groups=["HealthPotion"]]
+[node name="HealthPoition2" type="TextureRect" parent="CanvasLayer/PlayerGUI/PotionsContainer/HBoxContainer" groups=["HealthPotion"]]
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 texture = ExtResource("11_0l476")
-expand_mode = 3
-stretch_mode = 6
-metadata/_edit_use_anchors_ = true
+expand_mode = 1
+stretch_mode = 5
 
-[node name="HealthPoition3" type="TextureRect" parent="PlayerGUI/HBoxContainer" groups=["HealthPotion"]]
+[node name="HealthPoition3" type="TextureRect" parent="CanvasLayer/PlayerGUI/PotionsContainer/HBoxContainer" groups=["HealthPotion"]]
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 texture = ExtResource("11_0l476")
-expand_mode = 3
-stretch_mode = 6
-metadata/_edit_use_anchors_ = true
-
-[node name="CooldownLabel" type="Label" parent="PlayerGUI/HBoxContainer"]
-layout_mode = 2
-text = "Hồi"
+expand_mode = 1
+stretch_mode = 5

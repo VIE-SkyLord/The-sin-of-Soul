@@ -16,6 +16,9 @@ extends Camera2D
 @export var vignette_decay: float = 1.0
 @export var max_vignette_intensity: float = 0.8
 
+# FIX: Tách GUI khỏi camera movement
+@export var stabilize_gui: bool = true
+
 var _rng = RandomNumberGenerator.new()
 var _shake_offset: Vector2 = Vector2.ZERO
 var _base_offset: Vector2 = Vector2.ZERO
@@ -24,6 +27,11 @@ var _target_velocity: Vector2 = Vector2.ZERO
 var _smoothed_velocity: Vector2 = Vector2.ZERO
 var _predictive_offset: Vector2 = Vector2.ZERO
 var _is_first_frame: bool = true
+
+# FIX: Lưu trữ GUI reference và vị trí ổn định
+var _gui_node: Control
+var _last_camera_position: Vector2 = Vector2.ZERO
+var _gui_stable_position: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	_rng.randomize()
@@ -35,16 +43,44 @@ func _ready() -> void:
 	if target:
 		_last_target_position = target.global_position
 	
+	# FIX: Tìm và setup GUI
+	_gui_node = get_node_or_null("PlayerGUI")
+	if _gui_node and stabilize_gui:
+		_setup_stable_gui()
+	
 	print("Enhanced Camera initialized with predictive follow")
+
+func _setup_stable_gui() -> void:
+	"""Thiết lập GUI để không bị ảnh hưởng bởi camera movement"""
+	# Lưu vị trí ban đầu
+	_gui_stable_position = _gui_node.position
+	_last_camera_position = global_position
 
 func _process(delta: float) -> void:
 	if target:
 		_update_predictive_follow(delta)
 		var target_position = target.global_position + _base_offset + target_offset + _predictive_offset
+		
+		# FIX: Lưu vị trí cũ trước khi lerp
+		var old_camera_pos = global_position
+		
 		global_position = global_position.lerp(target_position, follow_speed * delta)
+		
+		# FIX: Bù trừ sự di chuyển của camera cho GUI
+		if _gui_node and stabilize_gui:
+			_stabilize_gui_position(old_camera_pos)
 	
 	_process_shake(delta)
 	_process_vignette(delta)
+
+func _stabilize_gui_position(old_camera_pos: Vector2) -> void:
+	"""Giữ GUI ổn định bằng cách bù trừ camera movement"""
+	var camera_delta = global_position - old_camera_pos
+	
+	# Bù trừ ngược lại sự di chuyển của camera
+	# Vì GUI là con của Camera, nó sẽ tự động di chuyển theo camera
+	# Nên ta cần trừ đi sự thay đổi đó
+	_gui_node.position = _gui_stable_position - camera_delta / _gui_node.scale
 
 func _update_predictive_follow(delta: float) -> void:
 	if not enable_predictive_follow:
@@ -79,6 +115,10 @@ func _process_shake(delta: float) -> void:
 		)
 		shake_intensity = max(0, shake_intensity - shake_decay * delta)
 		offset = _base_offset + _shake_offset
+		
+		# FIX: Không áp dụng shake cho GUI
+		if _gui_node and stabilize_gui:
+			_gui_node.position = _gui_stable_position
 	else:
 		_shake_offset = Vector2.ZERO
 		offset = _base_offset
@@ -126,3 +166,9 @@ func get_predictive_offset() -> Vector2:
 
 func get_target_velocity() -> Vector2:
 	return _smoothed_velocity
+
+# FIX: Toggle GUI stabilization
+func set_gui_stabilization(enabled: bool) -> void:
+	stabilize_gui = enabled
+	if not enabled and _gui_node:
+		_gui_node.position = _gui_stable_position
