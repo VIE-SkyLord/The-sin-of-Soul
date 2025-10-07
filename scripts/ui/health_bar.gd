@@ -4,6 +4,9 @@ var health_component: HealthComponent
 var possession_manager: Node
 
 func _ready() -> void:
+	# Thêm vào group để PossessionManager có thể tìm thấy
+	add_to_group("HealthBar")
+	
 	# Tìm PossessionManager để lắng nghe sự kiện nhập/thoát xác
 	possession_manager = get_tree().get_first_node_in_group("PossessionManager")
 	if possession_manager:
@@ -52,13 +55,21 @@ func _connect_to_player() -> void:
 				health_component.value_changed.connect(_on_health_changed)
 			
 			# Cập nhật UI ngay lập tức
-			max_value = health_component.max_value
-			value = health_component.current_value
+			_update_display()
 			print("HealthBar: Connected to ", valid_player.name, " - HP: ", value, "/", max_value)
 		else:
 			print("HealthBar: ERROR - No HealthComponent found on ", valid_player.name)
 	else:
 		print("HealthBar: ERROR - No valid CharacterBody2D found in Player group")
+
+func _update_display() -> void:
+	"""Cập nhật hiển thị thanh máu"""
+	if health_component:
+		max_value = health_component.max_value
+		value = health_component.current_value
+		# Force update visual
+		queue_redraw()
+		print("HealthBar: Display updated - value=", value, " max=", max_value, " percent=", (value/max_value)*100, "%")
 
 func _on_possessed(body: Node2D) -> void:
 	"""Gọi khi nhập xác - chuyển sang hiển thị máu của xác"""
@@ -70,12 +81,33 @@ func _on_possessed(body: Node2D) -> void:
 func _on_unpossessed(body: Node2D) -> void:
 	"""Gọi khi thoát xác - trở về hiển thị máu của Soul"""
 	print("HealthBar: _on_unpossessed called for ", body.name)
-	# Đợi để group được cập nhật
+	# Đợi nhiều frames để đảm bảo:
+	# 1. Group được cập nhật
+	# 2. Soul health được set về 1%
+	# 3. Signal value_changed được emit
+	await get_tree().process_frame
+	await get_tree().process_frame
 	await get_tree().process_frame
 	_connect_to_player()
+	# Force update lần nữa để chắc chắn
+	await get_tree().process_frame
+	_update_display()
 
 func _on_health_changed(_old_value: float, new_value: float) -> void:
 	if health_component:
-		max_value = health_component.max_value
-		value = new_value
+		_update_display()
 		print("HealthBar: Health changed to ", value, "/", max_value)
+
+func force_update() -> void:
+	"""Force reconnect và update display - được gọi từ PossessionManager"""
+	print("HealthBar: force_update() called")
+	_connect_to_player()
+	await get_tree().process_frame
+	_update_display()
+
+func disconnect_health() -> void:
+	"""Ngắt kết nối tạm thời với HealthComponent hiện tại"""
+	if health_component:
+		if health_component.value_changed.is_connected(_on_health_changed):
+			health_component.value_changed.disconnect(_on_health_changed)
+			print("HealthBar: Disconnected from health component (temporary)")
