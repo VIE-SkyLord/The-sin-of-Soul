@@ -59,7 +59,7 @@ func use_potion() -> bool:
 	
 	# Tính lượng máu hồi
 	var heal_amount = health_component.max_value * heal_percent
-	health_component.change(heal_amount)
+	health_component.heal(heal_amount)  # ← Đổi thành heal() để có hiệu ứng
 	
 	# Giảm số bình và bắt đầu cooldown
 	current_potions -= 1

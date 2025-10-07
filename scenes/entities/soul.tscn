@@ -910,6 +910,7 @@ jump_force = 700.0
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("1_vnf0k")
+heal_flash_color = Color(0, 1, 0, 0.498039)
 rate_recovery = 0.1
 
 [node name="StaminaComponent" type="Node" parent="."]
