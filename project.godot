@@ -39,6 +39,7 @@ HealthPotion=""
 Player=""
 Enemies=""
 Allies=""
+PlayerGUICanvas=""
 
 [input]
 

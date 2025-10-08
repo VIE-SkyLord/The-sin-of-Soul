@@ -1,6 +1,7 @@
-[gd_scene load_steps=17 format=3 uid="uid://74p4wp64n7w"]
+[gd_scene load_steps=19 format=3 uid="uid://74p4wp64n7w"]
 
 [ext_resource type="Script" uid="uid://cfus8b3vqdag4" path="res://scripts/entity/camera.gd" id="1_6sljk"]
+[ext_resource type="Shader" uid="uid://cdk1lvsd81wf8" path="res://shaders/vignette_overlay.gdshader" id="1_shader"]
 [ext_resource type="Texture2D" uid="uid://c6v8vu3vv6chi" path="res://assets/sprite/GUI/Status/Ground.png" id="2_ajmi5"]
 [ext_resource type="Texture2D" uid="uid://cjxgxl55cnb7t" path="res://assets/sprite/GUI/Status/Spiritual_Power.png" id="3_h0fcc"]
 [ext_resource type="Script" uid="uid://6gwgapt6khv3" path="res://scripts/ui/soul_bar.gd" id="4_6sljk"]
@@ -17,10 +18,17 @@
 [ext_resource type="Script" uid="uid://buwkn3xufyg42" path="res://scripts/ui/potion_display.gd" id="14_6sljk"]
 [ext_resource type="Texture2D" uid="uid://bmmf0gyd08kjm" path="res://assets/sprite/GUI/Status/Healing_Potion_Used.png" id="16_wuvac"]
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ur2ff"]
+shader = ExtResource("1_shader")
+shader_parameter/intensity = 1.0
+shader_parameter/softness = 0.8
+shader_parameter/vignette_color = Color(1, 0, 0, 1)
+shader_parameter/rect_size = Vector2(0.3, 0.3)
+
 [node name="Camera2D" type="Camera2D"]
 script = ExtResource("1_6sljk")
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." groups=["PlayerGUICanvas"]]
 
 [node name="PlayerGUI" type="Control" parent="CanvasLayer"]
 layout_mode = 3
@@ -82,6 +90,8 @@ value = 100.0
 texture_under = ExtResource("4_pg0tu")
 texture_progress = ExtResource("5_6sljk")
 script = ExtResource("7_wuvac")
+vignette_pulse_min_intensity = 0.0
+vignette_pulse_max_intensity = 0.3
 
 [node name="StaminaBar" type="TextureProgressBar" parent="CanvasLayer/PlayerGUI/StatusContainer"]
 layout_mode = 1
@@ -245,3 +255,10 @@ layout_mode = 2
 texture = ExtResource("11_0l476")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="VignetteOverlay" type="ColorRect" parent="CanvasLayer"]
+z_index = 100
+material = SubResource("ShaderMaterial_ur2ff")
+offset_right = 1279.0
+offset_bottom = 709.0
+color = Color(1, 1, 1, 0)
