@@ -138,6 +138,9 @@ func possess(target: Node2D) -> void:
 		body_health.rate_recovery = soul_health.rate_recovery
 		print("Synced rate_recovery to body: ", body_health.rate_recovery, " HP/s")
 	
+	# VÔ HIỆU HÓA DASH NẾU XÁC KHÔNG CÓ DASHCOMPONENT
+	disable_dash_if_body_lacks_component(target)
+	
 	soul.on_possess(target)
 	
 	# CẬP NHẬT TARGET cho TẤT CẢ kẻ địch
@@ -150,6 +153,24 @@ func possess(target: Node2D) -> void:
 	
 	print("PossessionManager: Emitting possessed signal for ", target.name)
 	possessed.emit(target)
+
+func disable_dash_if_body_lacks_component(target: Node2D) -> void:
+	"""Vô hiệu hóa dash của Soul nếu xác không có DashComponent"""
+	if not target.has_node("DashComponent"):
+		if soul.dash_component:
+			soul.dash_component.set_physics_process(false)
+			soul.dash_component.can_dash = false
+			print("Dash disabled - Body lacks DashComponent")
+	else:
+		print("Dash available - Body has DashComponent")
+
+func enable_dash_for_soul() -> void:
+	"""Bật lại dash cho Soul khi unpossess"""
+	if soul.dash_component:
+		soul.dash_component.set_physics_process(true)
+		soul.dash_component.can_dash = true
+		soul.dash_component.cooldown_timer = 0.0
+		print("Dash enabled - Soul unpossessed")
 
 func _on_possessed_body_died() -> void:
 	"""Xử lý khi xác bị chết - đẩy soul ra với knockback"""
@@ -248,7 +269,7 @@ func create_invulnerability_flash(duration: float) -> void:
 	if not soul:
 		return
 	
-	var flash_count = int(duration / 0.1)  # Nháy mỗi 0.1 giây
+	var flash_count = int(duration / 0.1)  # Nhấy mỗi 0.1 giây
 	var tween = create_tween()
 	
 	for i in flash_count:
@@ -343,6 +364,9 @@ func unpossess(force: bool = false) -> void:
 	
 	soul.visible = true
 	soul.set_physics_process(true)
+	
+	# BẬT LẠI DASH CHO SOUL
+	enable_dash_for_soul()
 	
 	if current_body.has_node("StateMachine"):
 		current_body.get_node("StateMachine").on_transition_requested("PatrolState")
