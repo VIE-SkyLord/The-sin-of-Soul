@@ -14,6 +14,7 @@ var body_original_layer: int = 0
 var body_original_mask: int = 0
 var body_hurtbox_original_layer: int = 0
 var body_hurtbox_original_mask: int = 0
+var body_original_rate_recovery: float = 0
 
 # Thông số đẩy lùi khi bị sát thương chí tử
 @export var knockback_force: float = 300.0
@@ -129,6 +130,13 @@ func possess(target: Node2D) -> void:
 	if soul.potion_component and target.has_node("HealthComponent"):
 		soul.potion_component.health_component = target.get_node("HealthComponent")
 		print("PotionComponent now healing body: ", target.name)
+		
+	# Đồng bộ rate_recovery từ Soul sang xác
+	if soul.has_node("HealthComponent") and target.has_node("HealthComponent"):
+		var soul_health = soul.get_node("HealthComponent")
+		var body_health = target.get_node("HealthComponent")
+		body_health.rate_recovery = soul_health.rate_recovery
+		print("Synced rate_recovery to body: ", body_health.rate_recovery, " HP/s")
 	
 	soul.on_possess(target)
 	
@@ -267,6 +275,11 @@ func sync_health_to_body(target: Node2D) -> void:
 
 func unpossess(force: bool = false) -> void:
 	if not current_body: return
+	
+	# Lưu rate_recovery ban đầu của xác (thêm biến này vào đầu class)
+	if current_body.has_node("HealthComponent"):
+		var body_health = current_body.get_node("HealthComponent")
+		body_health.rate_recovery = body_original_rate_recovery  # Khôi phục về giá trị gốc
 	
 	# Ngắt kết nối signal died
 	if current_body.has_node("HealthComponent"):
