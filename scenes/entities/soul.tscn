@@ -932,7 +932,7 @@ script = ExtResource("4_n663i")
 shape = SubResource("CapsuleShape2D_6egyc")
 debug_color = Color(0, 1, 0, 0.419608)
 
-[node name="DashComponent" type="Node2D" parent="."]
+[node name="DashComponent" type="Node" parent="."]
 script = ExtResource("6_ps73u")
 
 [node name="DashTimer" type="Timer" parent="DashComponent"]

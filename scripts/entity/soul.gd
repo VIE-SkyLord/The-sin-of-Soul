@@ -102,3 +102,7 @@ func on_possess(target: Node2D) -> void:
 func on_unpossess() -> void:
 	print("Soul unpossessed from: ", possessed_body.name if possessed_body else "unknown")
 	possessed_body = null
+	
+func _on_body_entered(body):
+	if dash_component and dash_component.is_dashing:
+		dash_component.force_stop()  # Dừng khẩn cấp khi va chạm
