@@ -297,6 +297,7 @@ collision_layer = 2
 collision_mask = 5
 script = ExtResource("1_xbr8y")
 move_speed = 500.0
+jump_force = 700.0
 patrol_range = 640.0
 attack_range = 640.0
 

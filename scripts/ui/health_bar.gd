@@ -140,7 +140,7 @@ func _update_display() -> void:
 		
 		# Force visual update
 		queue_redraw()
-		print("HealthBar: Display updated - value=", value, " max=", max_value, " percent=", health_percent*100, "%")
+		#print("HealthBar: Display updated - value=", value, " max=", max_value, " percent=", health_percent*100, "%")
 
 func _on_possessed(body: Node2D) -> void:
 	"""Called when possessing a body - switch to showing body's health"""
@@ -167,7 +167,7 @@ func _on_unpossessed(body: Node2D) -> void:
 func _on_health_changed(_old_value: float, new_value: float) -> void:
 	if health_component:
 		_update_display()
-		print("HealthBar: Health changed to ", value, "/", max_value)
+		#print("HealthBar: Health changed to ", value, "/", max_value)
 
 func force_update() -> void:
 	"""Force reconnect and update display - called from PossessionManager"""

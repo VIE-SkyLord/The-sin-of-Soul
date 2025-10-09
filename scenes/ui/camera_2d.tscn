@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://74p4wp64n7w"]
+[gd_scene load_steps=20 format=3 uid="uid://74p4wp64n7w"]
 
 [ext_resource type="Script" uid="uid://cfus8b3vqdag4" path="res://scripts/entity/camera.gd" id="1_6sljk"]
 [ext_resource type="Shader" uid="uid://cdk1lvsd81wf8" path="res://shaders/vignette_overlay.gdshader" id="1_shader"]
@@ -15,6 +15,7 @@
 [ext_resource type="Texture2D" uid="uid://dugj60s00q5r7" path="res://assets/sprite/GUI/Status/Charm_Slot.png" id="10_317dp"]
 [ext_resource type="Script" uid="uid://ch3021lyfysdq" path="res://scripts/ui/stamina_bar.gd" id="10_ur2ff"]
 [ext_resource type="Texture2D" uid="uid://nk5neg0hr1qp" path="res://assets/sprite/GUI/Status/Healing_Potion.png" id="11_0l476"]
+[ext_resource type="Script" uid="uid://cijymd6m7kfdg" path="res://scripts/ui/skill_mons.gd" id="13_7tqvt"]
 [ext_resource type="Script" uid="uid://buwkn3xufyg42" path="res://scripts/ui/potion_display.gd" id="14_6sljk"]
 [ext_resource type="Texture2D" uid="uid://bmmf0gyd08kjm" path="res://assets/sprite/GUI/Status/Healing_Potion_Used.png" id="16_wuvac"]
 
@@ -167,6 +168,7 @@ fill_mode = 4
 texture_under = ExtResource("8_7tqvt")
 texture_progress = ExtResource("9_iyexg")
 texture_progress_offset = Vector2(5, 5)
+script = ExtResource("13_7tqvt")
 
 [node name="CharmsContainer" type="HBoxContainer" parent="CanvasLayer/PlayerGUI"]
 layout_mode = 1
@@ -257,6 +259,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="VignetteOverlay" type="ColorRect" parent="CanvasLayer"]
+visible = false
 z_index = 100
 material = SubResource("ShaderMaterial_ur2ff")
 offset_right = 1279.0
