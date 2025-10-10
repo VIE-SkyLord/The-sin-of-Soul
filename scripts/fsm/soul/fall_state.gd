@@ -19,7 +19,3 @@ func physics_update(delta: float) -> void:
 			transition_to("RunState")
 		else:
 			transition_to("IdleState")
-	
-	# Dash trong khi rơi
-	if Input.is_action_just_pressed("dash") and actor.can_dash:
-		transition_to("DashState")

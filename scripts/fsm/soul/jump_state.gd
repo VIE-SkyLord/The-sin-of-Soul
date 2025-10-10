@@ -17,7 +17,3 @@ func physics_update(delta: float) -> void:
 	# Chuyển sang Fall khi đạt đỉnh nhảy
 	if actor.velocity.y >= 0:
 		transition_to("FallState")
-	
-	# Dash trong khi nhảy
-	if Input.is_action_just_pressed("dash") and actor.can_dash:
-		transition_to("DashState")

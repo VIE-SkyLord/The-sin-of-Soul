@@ -21,6 +21,28 @@ func physics_update(delta: float) -> void:
 	if Input.is_action_just_pressed("jump") and actor.is_on_floor():
 		transition_to("JumpState")
 	
-	# Chuyển sang Dash
-	if Input.is_action_just_pressed("dash") and actor.can_dash:
-		transition_to("DashState")
+	# Chuyển sang Dash - KIỂM TRA STAMINA TRƯỚC
+	if Input.is_action_just_pressed("dash"):
+		if can_perform_dash():
+			transition_to("DashState")
+
+# Kiểm tra có thể dash không (stamina + cooldown + ground check)
+func can_perform_dash() -> bool:
+	if not actor.dash_component:
+		return false
+	
+	# Kiểm tra cooldown
+	if not actor.dash_component.can_dash:
+		return false
+	
+	# Kiểm tra trên mặt đất
+	if not actor.is_on_floor():
+		return false
+	
+	# Kiểm tra stamina
+	if actor.has_node("StaminaComponent"):
+		var stamina_component = actor.get_node("StaminaComponent")
+		if stamina_component.current_value < actor.dash_component.stamina_consume:
+			return false
+	
+	return true
